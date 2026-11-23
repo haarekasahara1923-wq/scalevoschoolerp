@@ -182,12 +182,7 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                     </button>
                 </div>
 
-                {/* Mobile Drawer Branch Switcher for Super Admin */}
-                {isSuperAdmin && token && (
-                    <div className="hide-desktop" style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'rgba(139,92,246,0.06)' }}>
-                        <SuperAdminSwitcher token={token} isDrawer={true} onSwitched={onClose} />
-                    </div>
-                )}
+
 
                 {/* Nav */}
                 <nav className="sidebar-nav" style={{ paddingBottom: '20px' }}>
@@ -576,10 +571,7 @@ function DashboardHeader({ onMenuClick, onAiOpen }: { onMenuClick: () => void; o
                     Live
                 </div>
 
-                {/* Super Admin Switcher — visible on BOTH desktop & mobile */}
-                {user?.role === 'SUPER_ADMIN' && token && (
-                    <SuperAdminSwitcher token={token} />
-                )}
+
 
                 <Link href="/dashboard/notices" style={{ position: 'relative', textDecoration: 'none' }}>
                     <div className="bell-icon" style={{ width: '36px', height: '36px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '15px' }}>

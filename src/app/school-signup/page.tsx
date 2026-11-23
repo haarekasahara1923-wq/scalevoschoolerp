@@ -477,7 +477,20 @@ export default function SchoolSignupPage() {
           </div>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
+            📞 Helpline No:{' '}
+            <a href="tel:8962678915" style={{ color: '#34d399', fontWeight: '700', textDecoration: 'none' }}>
+              8962678915
+            </a>
+            {' '}| WhatsApp:{' '}
+            <a href="https://wa.me/918962678915" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366', fontWeight: '700', textDecoration: 'none' }}>
+              8962678915
+            </a>
+          </p>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
             Already registered?{' '}
             <Link href="/login" style={{ color: '#a78bfa', fontWeight: '700', textDecoration: 'none' }}>Sign in here →</Link>

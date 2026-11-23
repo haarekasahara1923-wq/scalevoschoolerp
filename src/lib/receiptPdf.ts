@@ -45,7 +45,7 @@ export function generateReceiptPDF(opts: ReceiptOptions) {
   const { receipt, student, tenant, installmentLabel = 'Fee Installment', distributions, isCollective, win: providedWin } = opts
   const schoolName = tenant?.name || process.env.NEXT_PUBLIC_SCHOOL_NAME || 'RSS Public School'
   const schoolAddress = tenant?.address || process.env.NEXT_PUBLIC_SCHOOL_ADDRESS || 'Ayodhya Nagari, AB Road, Gol Pahadiya, Lashkar, Gwalior (MP)'
-  const schoolPhone = tenant?.phone || process.env.NEXT_PUBLIC_SCHOOL_PHONE || '917489315077'
+  const schoolPhone = tenant?.phone || process.env.NEXT_PUBLIC_SCHOOL_PHONE || '8962678915'
   const schoolEmail = tenant?.email || process.env.NEXT_PUBLIC_SCHOOL_EMAIL || 'rsspublic1979@gmail.com'
   const logoUrl = tenant?.logo || ''
   const directorSign = tenant?.directorSign || ''

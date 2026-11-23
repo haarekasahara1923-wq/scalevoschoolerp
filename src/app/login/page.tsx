@@ -79,7 +79,7 @@ function LoginForm() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', margin: '0 auto 14px', boxShadow: '0 8px 32px rgba(139,92,246,0.4)' }}>🏫</div>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px' }}>RSS PUBLIC SCHOOL</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px' }}>SCLEVO SCHOOL ERP</div>
           <h1 style={{ fontSize: '22px', fontWeight: '900', color: 'white', lineHeight: 1.2 }}>School Portal Login</h1>
           <p style={{ color: 'rgba(255,255,255,0.35)', marginTop: '6px', fontSize: '13px' }}>Apne school dashboard mein sign in karein</p>
         </div>
@@ -191,15 +191,19 @@ function LoginForm() {
         <div style={{ textAlign: 'center', marginTop: '14px' }}>
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
             Don't have an account?{' '}
-            <Link href="/register" style={{ color: '#a78bfa', fontWeight: '700', textDecoration: 'none' }}>Register here →</Link>
+            <Link href="/school-signup" style={{ color: '#a78bfa', fontWeight: '700', textDecoration: 'none' }}>Register your school here →</Link>
           </p>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '10px' }}>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.2)' }}>
-            Need help?{' '}
-            <a href="https://wa.me/917489315077" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366', fontWeight: '600', textDecoration: 'none' }}>
-              WhatsApp: +91 7489315077
+        <div style={{ textAlign: 'center', marginTop: '12px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
+            📞 Helpline No:{' '}
+            <a href="tel:8962678915" style={{ color: '#34d399', fontWeight: '700', textDecoration: 'none' }}>
+              8962678915
+            </a>
+            {' '}| WhatsApp:{' '}
+            <a href="https://wa.me/918962678915" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366', fontWeight: '700', textDecoration: 'none' }}>
+              8962678915
             </a>
           </p>
         </div>

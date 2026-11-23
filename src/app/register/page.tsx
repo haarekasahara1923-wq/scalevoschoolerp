@@ -95,7 +95,7 @@ export default function RegisterPage() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', margin: '0 auto 14px', boxShadow: '0 8px 30px rgba(139,92,246,0.4)' }}>🏫</div>
-          <h1 style={{ fontSize: '22px', fontWeight: '900', color: 'white' }}>RSS Public School</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: '900', color: 'white' }}>Sclevo School ERP</h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginTop: '4px' }}>School Management Portal — Account Create Karein</p>
         </div>
 
@@ -263,6 +263,19 @@ export default function RegisterPage() {
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginTop: '6px' }}>
             Super Admin?{' '}
             <Link href="/school-signup" style={{ color: 'rgba(249,115,22,0.7)', textDecoration: 'none' }}>Register your school here</Link>
+          </p>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '12px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
+            📞 Helpline No:{' '}
+            <a href="tel:8962678915" style={{ color: '#34d399', fontWeight: '700', textDecoration: 'none' }}>
+              8962678915
+            </a>
+            {' '}| WhatsApp:{' '}
+            <a href="https://wa.me/918962678915" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366', fontWeight: '700', textDecoration: 'none' }}>
+              8962678915
+            </a>
           </p>
         </div>
       </div>
