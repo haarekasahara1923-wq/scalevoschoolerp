@@ -101,11 +101,13 @@ export async function PUT(req: NextRequest) {
 
         if (action === 'block') {
             await prisma.tenant.update({ where: { id: tenantId }, data: { isActive: false } })
+            await prisma.user.updateMany({ where: { tenantId }, data: { isActive: false } })
             return NextResponse.json({ success: true, message: 'School blocked successfully' })
         }
 
         if (action === 'unblock') {
             await prisma.tenant.update({ where: { id: tenantId }, data: { isActive: true } })
+            await prisma.user.updateMany({ where: { tenantId }, data: { isActive: true } })
             return NextResponse.json({ success: true, message: 'School unblocked successfully' })
         }
 
@@ -150,8 +152,9 @@ export async function PUT(req: NextRequest) {
                     }
                 })
             }
-            // Also activate tenant
+            // Also activate tenant and super admin user so they can login immediately
             await prisma.tenant.update({ where: { id: tenantId }, data: { isActive: true } })
+            await prisma.user.updateMany({ where: { tenantId }, data: { isActive: true } })
 
             return NextResponse.json({ success: true, message: `School marked as paid (${selectedPlan}) and activated` })
         }

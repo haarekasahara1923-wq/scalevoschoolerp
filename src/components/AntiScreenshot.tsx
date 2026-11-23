@@ -41,35 +41,11 @@ export function AntiScreenshot() {
     };
     document.addEventListener('keyup', handleKeyUp);
 
-    // Black screen / blur when window loses focus (preventing background screenshots / snipping tool overlays sometimes)
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        document.body.style.filter = 'blur(10px) brightness(0)';
-      } else {
-        document.body.style.filter = 'none';
-      }
-    };
-    
-    const handleBlur = () => {
-        document.body.style.filter = 'blur(10px) brightness(0)';
-    };
-
-    const handleFocus = () => {
-        document.body.style.filter = 'none';
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleFocus);
-
+    // Black screen / blur when window loses focus is disabled because it breaks payment iframes (Razorpay), autofill, and causes blinking
     return () => {
       document.removeEventListener('contextmenu', disableRightClick);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleFocus);
-      document.body.style.filter = 'none';
     };
   }, []);
 
