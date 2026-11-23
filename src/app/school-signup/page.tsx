@@ -98,7 +98,24 @@ export default function SchoolSignupPage() {
     setPaymentLoading(true)
 
     try {
-      // Create pending signup + Razorpay order (no auth needed yet)
+      // Ensure Razorpay script is loaded
+      if (typeof window === 'undefined' || !(window as any).Razorpay) {
+        const loaded = await new Promise<boolean>((resolve) => {
+          const s = document.createElement('script')
+          s.src = 'https://checkout.razorpay.com/v1/checkout.js'
+          s.async = true
+          s.onload = () => resolve(true)
+          s.onerror = () => resolve(false)
+          document.body.appendChild(s)
+        })
+        if (!loaded) {
+          setError('Failed to load payment gateway. Please check your internet connection and try again.')
+          setPaymentLoading(false)
+          return
+        }
+      }
+
+      // Create pending signup + Razorpay order
       const res = await fetch('/api/auth/signup-create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,19 +142,20 @@ export default function SchoolSignupPage() {
       }
 
       const plan = PLANS.find(p => p.key === selectedPlan)!
-      const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || data.keyId
+      const keyId = data.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      const cleanPhone = (form.directorPhone || '').replace(/[^0-9]/g, '').slice(-10)
 
       const options = {
         key: keyId,
         amount: data.amount,
         currency: 'INR',
         name: 'Sclevo School ERP',
-        description: `${plan.label} Subscription`,
-        image: '/logo.png',
+        description: `${plan.label} Subscription - ${plan.display}`,
         order_id: data.orderId,
         handler: async function (response: any) {
           // Verify payment & create school account
           setLoading(true)
+          setPaymentLoading(false)
           try {
             const verifyRes = await fetch('/api/auth/signup-verify-payment', {
               method: 'POST',
@@ -173,22 +191,31 @@ export default function SchoolSignupPage() {
         prefill: {
           name: form.directorName,
           email: form.email,
-          contact: form.directorPhone,
+          contact: cleanPhone,
         },
         theme: { color: '#8b5cf6' },
         modal: {
+          escape: false,
+          backdropclose: false,
           ondismiss: () => {
             setPaymentLoading(false)
-            setError('Payment cancelled. Please try again.')
           }
         }
       }
 
-      const rzp = new window.Razorpay(options)
+      const rzp = new (window as any).Razorpay(options)
+
+      rzp.on('payment.failed', function (response: any) {
+        console.error('Razorpay payment failed:', response.error)
+        setPaymentLoading(false)
+        const reason = response.error?.description || response.error?.reason || 'Payment failed or rejected by gateway'
+        setError(`Payment Failed: ${reason}`)
+      })
+
       rzp.open()
-      setPaymentLoading(false)
-    } catch {
-      setError('Failed to initiate payment. Please try again.')
+    } catch (err: any) {
+      console.error('Payment initialization error:', err)
+      setError(err?.message || 'Failed to initiate payment. Please try again.')
       setPaymentLoading(false)
     }
   }
