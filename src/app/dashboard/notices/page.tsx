@@ -37,14 +37,17 @@ export default function AdminNotices() {
   }, [token])
 
   useEffect(() => {
-    if (!selectedBatch || !token) {
+    if (!selectedCourse || !token) {
       setStudents([])
       return
     }
-    fetch(`/api/students?batchId=${selectedBatch}`, { headers: h })
+    const url = selectedBatch
+      ? `/api/students?courseId=${selectedCourse}&batchId=${selectedBatch}`
+      : `/api/students?courseId=${selectedCourse}`
+    fetch(url, { headers: h })
       .then(r => r.json())
       .then(d => setStudents(d.data || []))
-  }, [selectedBatch, token])
+  }, [selectedCourse, selectedBatch, token])
 
   const publish = async () => {
     if (!form.title.trim() || !form.message.trim()) { setMsg('Title and message are required'); return }
@@ -147,7 +150,7 @@ export default function AdminNotices() {
                 </select>
               </div>
               <div>
-                <label className="label">2. Select Section / Batch *</label>
+                <label className="label">2. Select Section / Batch (Optional)</label>
                 <select
                   className="input"
                   value={selectedBatch}
@@ -157,7 +160,7 @@ export default function AdminNotices() {
                   }}
                   disabled={!selectedCourse}
                 >
-                  <option value="">-- Choose Section --</option>
+                  <option value="">-- All Sections / Optional --</option>
                   {filteredBatches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>

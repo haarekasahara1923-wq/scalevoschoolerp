@@ -40,8 +40,19 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const { title, subject, date, maxMarks, courseId, batchId, results } = body
 
-        if (!title || !subject || !maxMarks || !courseId || !batchId || !results) {
+        if (!title || !subject || !maxMarks || !courseId || !results) {
             return NextResponse.json({ error: 'Required fields missing' }, { status: 400 })
+        }
+
+        let resolvedBatchId = batchId
+        if (!resolvedBatchId) {
+            let b = await prisma.batch.findFirst({ where: { courseId, tenantId: user!.tenantId } })
+            if (!b) {
+                b = await prisma.batch.create({
+                    data: { name: 'Section A', courseId, tenantId: user!.tenantId }
+                })
+            }
+            resolvedBatchId = b.id
         }
 
         const maxM = parseFloat(maxMarks)
@@ -53,7 +64,7 @@ export async function POST(req: NextRequest) {
                 date: new Date(date),
                 maxMarks: maxM,
                 courseId,
-                batchId,
+                batchId: resolvedBatchId,
                 teacherId: user!.userId,
                 results: {
                     create: results.map((r: any) => ({
