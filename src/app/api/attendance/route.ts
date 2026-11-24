@@ -8,13 +8,84 @@ export async function GET(req: NextRequest) {
     if (error) return error
 
     try {
-        const { batchId, courseId, date } = Object.fromEntries(new URL(req.url).searchParams.entries())
-        
+        const { searchParams } = new URL(req.url)
+        const batchId = searchParams.get('batchId')
+        const courseId = searchParams.get('courseId')
+        const date = searchParams.get('date')
+        const studentId = searchParams.get('studentId')
+        const month = searchParams.get('month') // 1-12
+        const year = searchParams.get('year') // e.g. 2026
+        const limit = searchParams.get('limit')
+
         const where: any = { tenantId: user!.tenantId }
-        if (batchId && batchId !== 'all') {
-            where.batchId = batchId
-        } else if (courseId) {
-            where.student = { courseId }
+        let parentChildren: any[] = []
+
+        if (user!.role === 'PARENT') {
+            const parentProfile = await prisma.parentProfile.findUnique({
+                where: { userId: user!.userId },
+                include: {
+                    children: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            studentId: true,
+                            scholarNo: true,
+                            photo: true,
+                            course: { select: { id: true, name: true } },
+                            batch: { select: { id: true, name: true } }
+                        }
+                    }
+                }
+            })
+            parentChildren = parentProfile?.children || []
+            const childrenIds = parentChildren.map(c => c.id)
+
+            if (childrenIds.length === 0) {
+                return NextResponse.json({
+                    success: true,
+                    data: [],
+                    children: [],
+                    stats: { total: 0, present: 0, absent: 0, late: 0, halfDay: 0, leave: 0, percentage: 0 }
+                })
+            }
+
+            if (studentId) {
+                if (!childrenIds.includes(studentId)) {
+                    return NextResponse.json({ error: 'Unauthorized: Student not linked to this parent' }, { status: 403 })
+                }
+                where.studentId = studentId
+            } else {
+                where.studentId = { in: childrenIds }
+            }
+        } else if (user!.role === 'STUDENT') {
+            const student = await prisma.student.findFirst({
+                where: {
+                    tenantId: user!.tenantId,
+                    OR: [
+                        { userId: user!.userId },
+                        { email: user!.email },
+                        { phone: user!.email },
+                        ...(user!.phone ? [{ phone: user!.phone }] : [])
+                    ]
+                }
+            })
+            if (!student) {
+                return NextResponse.json({
+                    success: true,
+                    data: [],
+                    stats: { total: 0, present: 0, absent: 0, late: 0, halfDay: 0, leave: 0, percentage: 0 }
+                })
+            }
+            where.studentId = student.id
+        } else {
+            // STAFF / ADMIN
+            if (studentId) {
+                where.studentId = studentId
+            } else if (batchId && batchId !== 'all') {
+                where.batchId = batchId
+            } else if (courseId) {
+                where.student = { courseId }
+            }
         }
 
         if (date) {
@@ -23,12 +94,30 @@ export async function GET(req: NextRequest) {
             const endDate = new Date(date)
             endDate.setHours(23, 59, 59, 999)
             where.date = { gte: startDate, lte: endDate }
+        } else if (month && year) {
+            const m = parseInt(month, 10)
+            const y = parseInt(year, 10)
+            const startDate = new Date(y, m - 1, 1, 0, 0, 0, 0)
+            const endDate = new Date(y, m, 0, 23, 59, 59, 999)
+            where.date = { gte: startDate, lte: endDate }
         }
 
         const attendances = await prisma.attendance.findMany({
             where,
-            include: { student: { select: { fullName: true, courseId: true } } },
-            orderBy: { createdAt: 'desc' }
+            include: {
+                student: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        studentId: true,
+                        scholarNo: true,
+                        course: { select: { id: true, name: true } },
+                        batch: { select: { id: true, name: true } }
+                    }
+                }
+            },
+            orderBy: { date: 'desc' },
+            ...(limit ? { take: parseInt(limit, 10) } : {})
         })
 
         const data = attendances.map(a => ({
@@ -36,7 +125,30 @@ export async function GET(req: NextRequest) {
             studentName: a.student?.fullName || 'Unknown',
         }))
 
-        return NextResponse.json({ success: true, data })
+        const total = attendances.length
+        const present = attendances.filter(a => a.status === 'PRESENT').length
+        const absent = attendances.filter(a => a.status === 'ABSENT').length
+        const late = attendances.filter(a => a.status === 'LATE').length
+        const halfDay = attendances.filter(a => a.status === 'HALF_DAY').length
+        const leave = attendances.filter(a => a.status === 'LEAVE').length
+        const percentage = total > 0 ? Math.round(((present + (halfDay * 0.5)) / total) * 100) : 0
+
+        const stats = {
+            total,
+            present,
+            absent,
+            late,
+            halfDay,
+            leave,
+            percentage
+        }
+
+        return NextResponse.json({
+            success: true,
+            data,
+            children: parentChildren,
+            stats
+        })
     } catch (err) {
         console.error('Fetch attendance error:', err)
         return NextResponse.json({ error: 'Failed to fetch attendance' }, { status: 500 })
