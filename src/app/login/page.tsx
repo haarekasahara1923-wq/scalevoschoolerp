@@ -188,11 +188,18 @@ function LoginForm() {
           </form>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '14px' }}>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-            Don't have an account?{' '}
-            <Link href="/school-signup" style={{ color: '#a78bfa', fontWeight: '700', textDecoration: 'none' }}>Register your school here →</Link>
+        <div style={{ textAlign: 'center', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+            Don't have an account?
           </p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/register" style={{ padding: '8px 14px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none' }}>
+              👨‍🎓 Student / Teacher / Parent Sign Up →
+            </Link>
+            <Link href="/school-signup" style={{ padding: '8px 14px', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', color: '#c4b5fd', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none' }}>
+              🏫 Register School →
+            </Link>
+          </div>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '12px' }}>

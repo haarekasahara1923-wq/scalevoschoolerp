@@ -263,6 +263,17 @@ export default function SchoolSignupPage() {
         </div>
 
         {/* Step indicator */}
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '30px', padding: '8px 18px' }}>
+            <span style={{ fontSize: '13px', color: '#34d399', fontWeight: '600' }}>
+              👨‍🎓 Student, Teacher, ya Parent hain?{' '}
+              <Link href="/register" style={{ color: 'white', fontWeight: '800', textDecoration: 'underline' }}>
+                Yahan Sign Up karein →
+              </Link>
+            </span>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: '0px', marginBottom: '24px', alignItems: 'center', justifyContent: 'center' }}>
           {steps.map((s, i) => (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>

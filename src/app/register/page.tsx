@@ -5,10 +5,9 @@ import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 
 const REGISTRABLE_ROLES = [
+  { key: 'STUDENT', label: 'Student', icon: '👨‍🎓' },
   { key: 'TEACHER', label: 'Teacher', icon: '👩‍🏫' },
   { key: 'PARENT', label: 'Parent', icon: '👨‍👩‍👧' },
-  { key: 'STUDENT', label: 'Student', icon: '👨‍🎓' },
-  { key: 'SUPER_ADMIN', label: 'Super Admin', icon: '🏫' },
 ]
 
 export default function RegisterPage() {
@@ -136,20 +135,8 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {role === 'SUPER_ADMIN' ? (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: '40px', marginBottom: '16px' }}>🏫</div>
-              <h3 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>Register Your School</h3>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', lineHeight: '1.5', marginBottom: '24px' }}>
-                As a Super Admin, you need to register your school first. Once registered, you'll receive a Unique School ID to share with your staff and students.
-              </p>
-              <button type="button" onClick={() => router.push('/school-signup')}
-                style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 16px rgba(234,88,12,0.35)' }}>
-                🚀 Proceed to School Registration
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleRegister}>
+          {/* Form */}
+          <form onSubmit={handleRegister}>
               {/* School ID Field */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>
@@ -251,18 +238,17 @@ export default function RegisterPage() {
                   </>
                 ) : '✨ Create Account & Login'}
               </button>
-            </form>
-          )}
+          </form>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
             Already have an account?{' '}
-            <Link href="/login" style={{ color: '#4ade80', fontWeight: '700', textDecoration: 'none' }}>Sign In here</Link>
+            <Link href="/login" style={{ color: '#4ade80', fontWeight: '700', textDecoration: 'none' }}>Sign In here →</Link>
           </p>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.2)', marginTop: '6px' }}>
-            Super Admin?{' '}
-            <Link href="/school-signup" style={{ color: 'rgba(249,115,22,0.7)', textDecoration: 'none' }}>Register your school here</Link>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginTop: '8px' }}>
+            🏫 School Owner / Principal?{' '}
+            <Link href="/school-signup" style={{ color: '#c4b5fd', fontWeight: '700', textDecoration: 'none' }}>Register your school here →</Link>
           </p>
         </div>
 

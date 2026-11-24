@@ -85,9 +85,10 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <div className="hide-mobile" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <Link href="/login" style={{ padding: '8px 20px', fontSize: '13px', fontWeight: '600', background: 'rgba(139,92,246,0.1)', color: '#c4b5fd', borderRadius: '8px', textDecoration: 'none', border: '1px solid rgba(139,92,246,0.3)' }}>Login</Link>
-          <Link href="/school-signup" style={{ padding: '9px 20px', fontSize: '13px', fontWeight: '700', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '8px', textDecoration: 'none', boxShadow: '0 4px 20px rgba(139,92,246,0.35)' }}>🏫 Register School</Link>
+        <div className="hide-mobile" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Link href="/login" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: '600', background: 'rgba(139,92,246,0.1)', color: '#c4b5fd', borderRadius: '8px', textDecoration: 'none', border: '1px solid rgba(139,92,246,0.3)' }}>Login</Link>
+          <Link href="/register" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: '600', background: 'rgba(16,185,129,0.15)', color: '#34d399', borderRadius: '8px', textDecoration: 'none', border: '1px solid rgba(16,185,129,0.35)' }}>👨‍🎓 Student/Staff Sign Up</Link>
+          <Link href="/school-signup" style={{ padding: '9px 18px', fontSize: '13px', fontWeight: '700', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '8px', textDecoration: 'none', boxShadow: '0 4px 20px rgba(139,92,246,0.35)' }}>🏫 Register School</Link>
         </div>
 
         <button className="show-mobile" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -103,6 +104,7 @@ export default function LandingPage() {
           ))}
           <div style={{ height: '1px', background: 'rgba(139,92,246,0.15)' }} />
           <Link href="/login" onClick={() => setMobileMenuOpen(false)} style={{ padding: '12px', textAlign: 'center', background: 'rgba(139,92,246,0.1)', color: '#c4b5fd', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', border: '1px solid rgba(139,92,246,0.25)' }}>🔑 Login</Link>
+          <Link href="/register" onClick={() => setMobileMenuOpen(false)} style={{ padding: '12px', textAlign: 'center', background: 'rgba(16,185,129,0.15)', color: '#34d399', borderRadius: '10px', textDecoration: 'none', fontWeight: '700', border: '1px solid rgba(16,185,129,0.35)' }}>👨‍🎓 Student / Staff Sign Up</Link>
           <Link href="/school-signup" onClick={() => setMobileMenuOpen(false)} style={{ padding: '12px', textAlign: 'center', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: '700' }}>🏫 Register School</Link>
         </div>
       )}
@@ -129,8 +131,9 @@ export default function LandingPage() {
           </p>
 
           <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '32px' }}>
-            <Link href="/school-signup" style={{ padding: '14px 36px', fontSize: '15px', fontWeight: '700', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '12px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(139,92,246,0.4)', border: '1px solid rgba(139,92,246,0.4)' }}>🏫 Register Your School</Link>
-            <Link href="/login" style={{ padding: '14px 32px', fontSize: '15px', fontWeight: '600', background: 'rgba(255,255,255,0.06)', color: 'white', borderRadius: '12px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>🔑 Login →</Link>
+            <Link href="/school-signup" style={{ padding: '14px 32px', fontSize: '15px', fontWeight: '700', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '12px', textDecoration: 'none', boxShadow: '0 8px 32px rgba(139,92,246,0.4)', border: '1px solid rgba(139,92,246,0.4)' }}>🏫 Register Your School</Link>
+            <Link href="/register" style={{ padding: '14px 28px', fontSize: '15px', fontWeight: '700', background: 'rgba(16,185,129,0.15)', color: '#34d399', borderRadius: '12px', textDecoration: 'none', border: '1px solid rgba(16,185,129,0.35)' }}>👨‍🎓 Student / Staff Sign Up →</Link>
+            <Link href="/login" style={{ padding: '14px 28px', fontSize: '15px', fontWeight: '600', background: 'rgba(255,255,255,0.06)', color: 'white', borderRadius: '12px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>🔑 Login →</Link>
           </div>
 
           <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
@@ -301,10 +304,15 @@ export default function LandingPage() {
             Apne school ka poora management ek jagah karein. Students, fees, attendance, exams — sab kuch ek click mein. Plans start from ₹599/month.
           </p>
 
-          <Link href="/school-signup" style={{ display: 'inline-block', padding: '16px 48px', fontSize: '16px', fontWeight: '700', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '14px', textDecoration: 'none', boxShadow: '0 12px 40px rgba(139,92,246,0.4)' }}>
-            🏫 Register Your School →
-          </Link>
-          <p style={{ marginTop: '20px', fontSize: '13px', color: 'rgba(255,255,255,0.25)' }}>
+          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
+            <Link href="/school-signup" style={{ display: 'inline-block', padding: '16px 36px', fontSize: '15px', fontWeight: '700', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: 'white', borderRadius: '14px', textDecoration: 'none', boxShadow: '0 12px 40px rgba(139,92,246,0.4)' }}>
+              🏫 Register Your School →
+            </Link>
+            <Link href="/register" style={{ display: 'inline-block', padding: '16px 32px', fontSize: '15px', fontWeight: '700', background: 'rgba(16,185,129,0.15)', color: '#34d399', borderRadius: '14px', textDecoration: 'none', border: '1px solid rgba(16,185,129,0.35)' }}>
+              👨‍🎓 Student / Staff Sign Up →
+            </Link>
+          </div>
+          <p style={{ marginTop: '16px', fontSize: '13px', color: 'rgba(255,255,255,0.35)' }}>
             Already have an account?{' '}
             <Link href="/login" style={{ color: '#a78bfa', fontWeight: '700', textDecoration: 'none' }}>Sign in here</Link>
           </p>
