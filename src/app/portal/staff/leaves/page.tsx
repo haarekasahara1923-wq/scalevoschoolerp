@@ -3,22 +3,24 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function StaffLeavesPage() {
-    const { token, user } = useAuth()
+    const { token } = useAuth()
     const [leaves, setLeaves] = useState<any[]>([])
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [reason, setReason] = useState('')
     const [errorMsg, setErrorMsg] = useState('')
     const [successMsg, setSuccessMsg] = useState('')
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        if (!token || !(user as any)?.teacherProfile?.id) return
-        fetchLeaves()
-    }, [token, user])
+        if (token) fetchLeaves()
+    }, [token])
 
     const fetchLeaves = async () => {
+        setLoading(true)
         try {
-            const r = await fetch(`/api/teachers/leaves?teacherId=${(user as any)?.teacherProfile?.id}`, {
+            // No teacherId param — API auto-resolves from token for TEACHER/STAFF
+            const r = await fetch('/api/teachers/leaves', {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const res = await r.json()
@@ -26,22 +28,20 @@ export default function StaffLeavesPage() {
         } catch (e) {
             console.error(e)
         }
+        setLoading(false)
     }
 
     const applyLeave = async (e: React.FormEvent) => {
         e.preventDefault()
         setErrorMsg('')
         setSuccessMsg('')
-        if (!(user as any)?.teacherProfile?.id) {
-            setErrorMsg('Teacher profile not found. Please contact admin.')
-            return
-        }
 
         try {
+            // No teacherId in payload — API auto-resolves from token
             const r = await fetch('/api/teachers/leaves', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ teacherId: (user as any).teacherProfile.id, startDate, endDate, reason })
+                body: JSON.stringify({ startDate, endDate, reason })
             })
             const res = await r.json()
             if (res.success) {
@@ -62,8 +62,8 @@ export default function StaffLeavesPage() {
         <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
             <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px' }}>My Leave Applications</h1>
 
-            {errorMsg && <div style={{ color: 'red', marginBottom: '16px' }}>{errorMsg}</div>}
-            {successMsg && <div style={{ color: 'green', marginBottom: '16px' }}>{successMsg}</div>}
+            {errorMsg && <div style={{ color: 'red', marginBottom: '16px', padding: '12px', background: '#fee2e2', borderRadius: '8px' }}>{errorMsg}</div>}
+            {successMsg && <div style={{ color: '#166534', marginBottom: '16px', padding: '12px', background: '#dcfce7', borderRadius: '8px' }}>{successMsg}</div>}
 
             <form onSubmit={applyLeave} className="card" style={{ padding: '24px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: '600' }}>Apply for Leave</h2>
@@ -96,7 +96,9 @@ export default function StaffLeavesPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {leaves.map((l: any) => (
+                        {loading ? (
+                            <tr><td colSpan={5} style={{ padding: '16px', textAlign: 'center' }}>Loading...</td></tr>
+                        ) : leaves.map((l: any) => (
                             <tr key={l.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                 <td style={{ padding: '12px 16px' }}>{new Date(l.startDate).toLocaleDateString()}</td>
                                 <td style={{ padding: '12px 16px' }}>{new Date(l.endDate).toLocaleDateString()}</td>
@@ -113,7 +115,7 @@ export default function StaffLeavesPage() {
                                 <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '14px' }}>{new Date(l.createdAt).toLocaleDateString()}</td>
                             </tr>
                         ))}
-                        {leaves.length === 0 && (
+                        {!loading && leaves.length === 0 && (
                             <tr><td colSpan={5} style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>No leave applications found.</td></tr>
                         )}
                     </tbody>

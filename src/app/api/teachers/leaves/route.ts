@@ -1,16 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
-import { requireAuth, requireWriteAccess } from '@/app/api/middleware'
+import { requireAuth } from '@/app/api/middleware'
 import { prisma } from '@/lib/prisma'
+
+// Helper: resolve teacherId from token if not explicitly provided
+async function resolveTeacherId(user: any, teacherId: string | null): Promise<string | null> {
+    if (teacherId) return teacherId
+    if (!['TEACHER', 'STAFF'].includes(user.role)) return null
+    const teacher = await prisma.teacher.findFirst({
+        where: {
+            tenantId: user.tenantId,
+            OR: [
+                { email: user.email },
+                ...(user.phone ? [{ phone: user.phone }] : []),
+            ]
+        },
+        select: { id: true }
+    })
+    return teacher?.id || null
+}
 
 export async function GET(req: NextRequest) {
     const { error, user } = requireAuth(req)
     if (error) return error
 
     const url = new URL(req.url)
-    const teacherId = url.searchParams.get('teacherId')
+    const teacherIdParam = url.searchParams.get('teacherId')
 
     try {
+        // Auto-resolve for TEACHER/STAFF portal
+        const teacherId = await resolveTeacherId(user!, teacherIdParam)
+
         let whereClause: any = { tenantId: user!.tenantId }
         
         if (teacherId) {
@@ -35,12 +55,19 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { error, user } = requireWriteAccess(req)
+    // Allow TEACHER/STAFF to apply their own leave
+    const { error, user } = requireAuth(req)
     if (error) return error
 
     try {
         const body = await req.json()
-        const { teacherId, startDate, endDate, reason } = body
+        const { startDate, endDate, reason } = body
+        let { teacherId } = body
+
+        // Auto-resolve teacherId for portal self-service
+        if (!teacherId) {
+            teacherId = await resolveTeacherId(user!, null)
+        }
 
         if (!teacherId || !startDate || !endDate || !reason) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -65,7 +92,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-    const { error, user } = requireWriteAccess(req)
+    const { error, user } = requireAuth(req)
     if (error) return error
 
     // Only SUPER_ADMIN (or similar) should approve/reject

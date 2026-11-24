@@ -10,6 +10,16 @@ interface User {
     tenantId: string
     phone?: string
     studentId?: string
+    teacherProfile?: {
+        id: string
+        name: string
+        phone?: string | null
+        email?: string | null
+        salary?: number | null
+        subject?: string | null
+        photo?: string | null
+    } | null
+    parentProfile?: { id: string } | null
 }
 
 interface Tenant {

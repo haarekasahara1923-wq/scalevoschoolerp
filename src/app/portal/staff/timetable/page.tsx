@@ -20,11 +20,11 @@ export default function StaffTimetablePage() {
     const [errorMsg, setErrorMsg] = useState('')
 
     useEffect(() => {
-        if (token && (user as any)?.teacherProfile?.id) {
+        if (token) {
             fetchTimetable()
             fetchOptions()
         }
-    }, [token, user])
+    }, [token])
 
     const fetchOptions = async () => {
         try {
@@ -40,7 +40,8 @@ export default function StaffTimetablePage() {
 
     const fetchTimetable = async () => {
         try {
-            const r = await fetch(`/api/teachers/timetable?teacherId=${(user as any)?.teacherProfile?.id}`, {
+            // No teacherId param — API auto-resolves from token for TEACHER/STAFF
+            const r = await fetch('/api/teachers/timetable', {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const res = await r.json()
@@ -54,14 +55,12 @@ export default function StaffTimetablePage() {
         e.preventDefault()
         setErrorMsg('')
         setMsg('')
-        if (!(user as any)?.teacherProfile?.id) return
 
         try {
             const r = await fetch('/api/teachers/timetable', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
-                    teacherId: (user as any).teacherProfile.id,
                     courseId,
                     batchId,
                     subject,

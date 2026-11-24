@@ -82,6 +82,29 @@ export async function POST(req: NextRequest) {
             data: { lastLogin: new Date() }
         })
 
+        // If teacher/staff but teacherProfile is null (userId not linked in Teacher table),
+        // resolve by email/phone and auto-link for future logins
+        let resolvedTeacherProfile = user.teacherProfile || null
+        if (!resolvedTeacherProfile && ['TEACHER', 'STAFF'].includes(user.role)) {
+            resolvedTeacherProfile = await prisma.teacher.findFirst({
+                where: {
+                    tenantId: user.tenantId,
+                    OR: [
+                        { email: user.email },
+                        ...(user.phone ? [{ phone: user.phone }] : []),
+                        ...(user.email ? [{ email: user.email.toLowerCase() }] : []),
+                    ]
+                }
+            })
+            // Auto-link so future logins are fast
+            if (resolvedTeacherProfile && !resolvedTeacherProfile.userId) {
+                await prisma.teacher.update({
+                    where: { id: resolvedTeacherProfile.id },
+                    data: { userId: user.id }
+                }).catch(() => {/* ignore if unique constraint fails */})
+            }
+        }
+
         return NextResponse.json({
             success: true,
             accessToken,
@@ -94,7 +117,7 @@ export async function POST(req: NextRequest) {
                 tenantId: user.tenantId,
                 phone: user.phone,
                 studentId: user.studentProfile?.id || null,
-                teacherProfile: user.teacherProfile || null,
+                teacherProfile: resolvedTeacherProfile || null,
                 parentProfile: user.parentProfile || null,
             },
             tenant: tenant ? {

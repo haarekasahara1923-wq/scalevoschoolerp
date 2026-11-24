@@ -3,20 +3,19 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function StaffSalaryLedgerPage() {
-    const { token, user } = useAuth()
+    const { token } = useAuth()
     const [ledgers, setLedgers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        if (token && (user as any)?.teacherProfile?.id) {
-            fetchLedgers()
-        }
-    }, [token, user])
+        if (token) fetchLedgers()
+    }, [token])
 
     const fetchLedgers = async () => {
         setLoading(true)
         try {
-            const r = await fetch(`/api/teachers/ledger?teacherId=${(user as any)?.teacherProfile?.id}`, {
+            // No teacherId param — API auto-resolves from token for TEACHER/STAFF
+            const r = await fetch('/api/teachers/ledger', {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const res = await r.json()

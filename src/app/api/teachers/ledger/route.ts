@@ -3,16 +3,36 @@ export const dynamic = 'force-dynamic'
 import { requireAuth, requireWriteAccess } from '@/app/api/middleware'
 import { prisma } from '@/lib/prisma'
 
+// Helper: resolve teacherId from token if not explicitly provided
+async function resolveTeacherId(user: any, teacherId: string | null): Promise<string | null> {
+    if (teacherId) return teacherId
+    if (!['TEACHER', 'STAFF'].includes(user.role)) return null
+    const teacher = await prisma.teacher.findFirst({
+        where: {
+            tenantId: user.tenantId,
+            OR: [
+                { email: user.email },
+                ...(user.phone ? [{ phone: user.phone }] : []),
+            ]
+        },
+        select: { id: true }
+    })
+    return teacher?.id || null
+}
+
 export async function GET(req: NextRequest) {
     const { error, user } = requireAuth(req)
     if (error) return error
 
     const url = new URL(req.url)
-    const teacherId = url.searchParams.get('teacherId')
+    const teacherIdParam = url.searchParams.get('teacherId')
     const monthStr = url.searchParams.get('month')
     const yearStr = url.searchParams.get('year')
 
     try {
+        // Auto-resolve for TEACHER/STAFF portal
+        const teacherId = await resolveTeacherId(user!, teacherIdParam)
+
         let whereClause: any = { tenantId: user!.tenantId }
         
         if (teacherId) whereClause.teacherId = teacherId

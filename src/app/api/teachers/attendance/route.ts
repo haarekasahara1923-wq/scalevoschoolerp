@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
-import { requireAuth, requireWriteAccess } from '@/app/api/middleware'
+import { requireAuth } from '@/app/api/middleware'
 import { prisma } from '@/lib/prisma'
+
+// Helper: resolve teacherId from token if not explicitly provided
+async function resolveTeacherId(user: any, teacherId: string | null): Promise<string | null> {
+    if (teacherId) return teacherId
+    if (!['TEACHER', 'STAFF'].includes(user.role)) return null
+    const teacher = await prisma.teacher.findFirst({
+        where: {
+            tenantId: user.tenantId,
+            OR: [
+                { email: user.email },
+                ...(user.phone ? [{ phone: user.phone }] : []),
+            ]
+        },
+        select: { id: true }
+    })
+    return teacher?.id || null
+}
 
 export async function GET(req: NextRequest) {
     const { error, user } = requireAuth(req)
@@ -9,9 +26,12 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url)
     const dateStr = url.searchParams.get('date')
-    const teacherId = url.searchParams.get('teacherId')
+    const teacherIdParam = url.searchParams.get('teacherId')
 
     try {
+        // Resolve teacherId - for TEACHER/STAFF portal, auto-find from token
+        const teacherId = await resolveTeacherId(user!, teacherIdParam)
+
         let whereClause: any = { tenantId: user!.tenantId }
         
         if (dateStr) {
@@ -29,7 +49,7 @@ export async function GET(req: NextRequest) {
         if (teacherId) {
             whereClause.teacherId = teacherId
         } else {
-            // Only fetch teacher attendances (where studentId is null)
+            // Admin fetching all: only fetch teacher attendances (where studentId is null)
             whereClause.studentId = null
         }
 
@@ -51,12 +71,19 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { error, user } = requireWriteAccess(req)
+    // Allow TEACHER/STAFF to mark their own attendance, plus admins
+    const { error, user } = requireAuth(req)
     if (error) return error
 
     try {
         const body = await req.json()
-        const { teacherId, date, status, inTime, outTime, notes } = body
+        const { date, status, inTime, outTime, notes } = body
+        let { teacherId } = body
+
+        // Auto-resolve teacherId for portal self-service
+        if (!teacherId) {
+            teacherId = await resolveTeacherId(user!, null)
+        }
 
         if (!teacherId || !date || !status) {
             return NextResponse.json({ error: 'teacherId, date, and status are required' }, { status: 400 })

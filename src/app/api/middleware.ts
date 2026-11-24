@@ -32,6 +32,8 @@ export function requireRole(req: NextRequest, roles: string[]) {
 const FULL_ACCESS_ROLES = ['SUPER_ADMIN', 'COACHING_ADMIN']
 // Sub-admin roles (can only add/view, NOT edit/delete/block)
 const SUB_ADMIN_ROLES = ['ADMIN_OPERATION', 'ADMIN_LIBRARY', 'ADMIN_SPORTS', 'ADMIN_TRANSPORT']
+// Portal self-service roles (teacher/staff can write their own attendance, leaves etc.)
+const PORTAL_ROLES = ['TEACHER', 'STAFF', 'STUDENT', 'PARENT']
 
 export function requireWriteAccess(req: NextRequest) {
     const { error, user } = requireAuth(req)
@@ -42,6 +44,13 @@ export function requireWriteAccess(req: NextRequest) {
             user: null,
         }
     }
+    return { error: null, user }
+}
+
+// Allow self-service portal write operations for TEACHER/STAFF/STUDENT/PARENT
+export function requirePortalAccess(req: NextRequest) {
+    const { error, user } = requireAuth(req)
+    if (error) return { error, user: null }
     return { error: null, user }
 }
 
