@@ -13,6 +13,7 @@ interface Teacher {
     subject: string[]
     salary: number
     joinDate: string
+    dob?: string | null
     photo: string | null
     isActive: boolean
     createdAt: string
@@ -100,7 +101,7 @@ export default function StaffManagementPage() {
     const [selectedStaff, setSelectedStaff] = useState<Teacher | null>(null)
     const [selectedLeave, setSelectedLeave] = useState<Leave | null>(null)
 
-    const [staffForm, setStaffForm] = useState({ name: '', email: '', phone: '', subject: '', salary: '', joinDate: new Date().toISOString().split('T')[0] })
+    const [staffForm, setStaffForm] = useState({ name: '', email: '', phone: '', subject: '', salary: '', joinDate: new Date().toISOString().split('T')[0], dob: '' })
     const [ttForm, setTtForm] = useState({ teacherId: '', courseId: '', batchId: '', subject: '', dayOfWeek: '1', startTime: '09:00', endTime: '10:00' })
 
     // Attendance filter
@@ -269,12 +270,12 @@ export default function StaffManagementPage() {
     /* ── Open modals ───────────────────────────── */
     const openAdd = () => {
         setSelectedStaff(null)
-        setStaffForm({ name: '', email: '', phone: '', subject: '', salary: '', joinDate: new Date().toISOString().split('T')[0] })
+        setStaffForm({ name: '', email: '', phone: '', subject: '', salary: '', joinDate: new Date().toISOString().split('T')[0], dob: '' })
         setModal('addStaff')
     }
     const openEdit = (t: Teacher) => {
         setSelectedStaff(t)
-        setStaffForm({ name: t.name, email: t.email || '', phone: t.phone, subject: t.subject.join(', '), salary: t.salary.toString(), joinDate: t.joinDate?.split('T')[0] || '' })
+        setStaffForm({ name: t.name, email: t.email || '', phone: t.phone, subject: t.subject.join(', '), salary: t.salary.toString(), joinDate: t.joinDate?.split('T')[0] || '', dob: t.dob ? t.dob.split('T')[0] : '' })
         setModal('editStaff')
     }
     const openTt = () => {
@@ -824,6 +825,10 @@ export default function StaffManagementPage() {
                                     <label className="label">Join Date</label>
                                     <input className="input" type="date" value={staffForm.joinDate} onChange={e => setStaffForm({ ...staffForm, joinDate: e.target.value })} />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="label">Date of Birth (for Birthday Card)</label>
+                                <input className="input" type="date" value={staffForm.dob} onChange={e => setStaffForm({ ...staffForm, dob: e.target.value })} />
                             </div>
                         </div>
                         <div className="modal-footer">

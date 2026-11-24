@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
         console.log('[API POST /teachers] Received payload:', body)
-        const { name, email, phone, subject, salary, joinDate } = body
+        const { name, email, phone, subject, salary, joinDate, dob } = body
 
         if (!name || !phone) {
             return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 })
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
                 subject: Array.isArray(subject) ? subject : subject ? [subject] : [],
                 salary: parseFloat(salary) || 0,
                 joinDate: joinDate ? new Date(joinDate) : new Date(),
+                dob: dob ? new Date(dob) : null,
                 isActive: true,
             }
         })
@@ -75,7 +76,7 @@ export async function PATCH(req: NextRequest) {
 
     try {
         const body = await req.json()
-        const { id, name, email, phone, subject, salary, joinDate, isActive } = body
+        const { id, name, email, phone, subject, salary, joinDate, dob, isActive } = body
 
         if (!id) return NextResponse.json({ error: 'Teacher ID is required' }, { status: 400 })
 
@@ -88,6 +89,7 @@ export async function PATCH(req: NextRequest) {
                 subject: Array.isArray(subject) ? subject : subject ? [subject] : undefined,
                 salary: salary !== undefined ? parseFloat(salary) : undefined,
                 joinDate: joinDate ? new Date(joinDate) : undefined,
+                dob: dob !== undefined ? (dob ? new Date(dob) : null) : undefined,
                 isActive: isActive !== undefined ? isActive : undefined,
             }
         })

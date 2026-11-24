@@ -413,8 +413,9 @@ model Teacher {
   email     String?
   phone     String
   subject   String[]
-  salary    Float    @default(0)
-  joinDate  DateTime @default(now())
+  salary    Float     @default(0)
+  joinDate  DateTime  @default(now())
+  dob       DateTime?
   photo     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())

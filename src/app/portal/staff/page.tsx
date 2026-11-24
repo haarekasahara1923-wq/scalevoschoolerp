@@ -2,11 +2,15 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { BirthdayCertificateModal } from '@/components/BirthdayCertificateModal'
 
 export default function StaffHome() {
-  const { user, token } = useAuth()
+  const { user, token, tenant } = useAuth()
   const [stats, setStats] = useState({ homeworks: 0, notices: 0 })
   const [loading, setLoading] = useState(true)
+  const [staffProfile, setStaffProfile] = useState<any>(null)
+  const [isBirthdayToday, setIsBirthdayToday] = useState(false)
+  const [showBirthday, setShowBirthday] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -14,11 +18,37 @@ export default function StaffHome() {
     Promise.all([
       fetch('/api/homework', { headers: h }).then(r => r.json()),
       fetch('/api/notices', { headers: h }).then(r => r.json()),
-    ]).then(([hw, n]) => {
+      fetch('/api/teachers/me', { headers: h }).then(r => r.json()).catch(() => null),
+    ]).then(([hw, n, meRes]) => {
       setStats({ homeworks: hw.homeworks?.length || 0, notices: n.notices?.length || 0 })
+
+      const teacher = meRes?.success ? meRes.data : null
+      if (teacher) {
+        setStaffProfile(teacher)
+        if (teacher.dob) {
+          const dob = new Date(teacher.dob)
+          const today = new Date()
+          if (dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()) {
+            setIsBirthdayToday(true)
+            const todayStr = today.toISOString().split('T')[0]
+            if (!localStorage.getItem(`bday_dismissed_staff_${teacher.id}_${todayStr}`)) {
+              setShowBirthday(true)
+            }
+          }
+        }
+      }
+
       setLoading(false)
     })
   }, [token])
+
+  const handleCloseBirthday = () => {
+    if (staffProfile?.id) {
+      const todayStr = new Date().toISOString().split('T')[0]
+      localStorage.setItem(`bday_dismissed_staff_${staffProfile.id}_${todayStr}`, '1')
+    }
+    setShowBirthday(false)
+  }
 
   const actions = [
     { href: '/portal/staff/my-attendance', icon: '⏱️', label: 'My Attendance', color: '#10b981' },
@@ -42,6 +72,31 @@ export default function StaffHome() {
         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>Staff</div>
       </div>
 
+      {isBirthdayToday && staffProfile && (
+        <button
+          type="button"
+          onClick={() => setShowBirthday(true)}
+          style={{
+            background: 'linear-gradient(135deg, #f59e0b, #ec4899)',
+            border: 'none',
+            borderRadius: '14px',
+            padding: '14px 18px',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: '800' }}>🎂 Happy Birthday, {staffProfile.name}!</div>
+            <div style={{ fontSize: '12px', opacity: 0.9 }}>Tap to view &amp; download your Birthday Card</div>
+          </div>
+          <span style={{ fontSize: '22px' }}>🎁</span>
+        </button>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         {actions.map(a => (
           <Link key={a.href} href={a.href} style={{ textDecoration: 'none' }}>
@@ -63,6 +118,16 @@ export default function StaffHome() {
           <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Notices</div>
         </div>
       </div>
+
+      {showBirthday && staffProfile && (
+        <BirthdayCertificateModal
+          isOpen={showBirthday}
+          onClose={handleCloseBirthday}
+          staff={staffProfile}
+          school={tenant}
+          isStaff={true}
+        />
+      )}
     </div>
   )
 }

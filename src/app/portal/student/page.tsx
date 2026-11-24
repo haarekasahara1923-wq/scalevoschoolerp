@@ -34,7 +34,10 @@ export default function StudentHome() {
         const dob = new Date(prof.dob);
         const today = new Date();
         if (dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()) {
-          setShowBirthday(true);
+          const todayStr = today.toISOString().split('T')[0];
+          if (!localStorage.getItem(`bday_dismissed_${prof.id}_${todayStr}`)) {
+            setShowBirthday(true);
+          }
         }
       }
       setLoading(false)
@@ -104,7 +107,11 @@ export default function StudentHome() {
       {showBirthday && studentProfile && (
         <BirthdayCertificateModal 
           isOpen={showBirthday} 
-          onClose={() => setShowBirthday(false)}
+          onClose={() => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem(`bday_dismissed_${studentProfile.id}_${todayStr}`, '1');
+            setShowBirthday(false);
+          }}
           student={studentProfile}
           school={tenant}
         />

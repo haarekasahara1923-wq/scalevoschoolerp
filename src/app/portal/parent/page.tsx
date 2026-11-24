@@ -32,12 +32,18 @@ export default function ParentHome() {
       
       if (prof?.children?.length > 0) {
         const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
         const bdayChild = prof.children.find((c: any) => {
           if (!c.dob) return false;
           const dob = new Date(c.dob);
           return dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth();
         });
-        if (bdayChild) setBirthdayChild(bdayChild);
+        if (bdayChild) {
+          const dismissKey = `bday_dismissed_${bdayChild.id}_${todayStr}`;
+          if (!localStorage.getItem(dismissKey)) {
+            setBirthdayChild(bdayChild);
+          }
+        }
       }
 
       setLoading(false)
@@ -194,7 +200,11 @@ export default function ParentHome() {
       {birthdayChild && (
         <BirthdayCertificateModal 
           isOpen={!!birthdayChild} 
-          onClose={() => setBirthdayChild(null)}
+          onClose={() => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem(`bday_dismissed_${birthdayChild.id}_${todayStr}`, '1');
+            setBirthdayChild(null);
+          }}
           student={birthdayChild}
           school={tenant}
         />
