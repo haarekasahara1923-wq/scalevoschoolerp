@@ -8,9 +8,14 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const batchId = searchParams.get('batchId')
+  const courseId = searchParams.get('courseId')
 
   const where: any = { tenantId: user!.tenantId }
-  if (batchId) where.batchId = batchId
+  if (batchId) {
+    where.batchId = batchId
+  } else if (courseId) {
+    where.batch = { courseId }
+  }
 
   let student: any = null
 
@@ -34,24 +39,33 @@ export async function GET(req: NextRequest) {
           data: { userId: user!.userId }
         }).catch(() => {})
       }
-      where.batchId = student.batchId
+      if (student.batchId) {
+        where.batchId = student.batchId
+      } else if (student.courseId) {
+        where.batch = { courseId: student.courseId }
+      }
     }
   } else if (user!.role === 'PARENT') {
-    // For parents: fetch all children linked to them and get their batchIds
+    // For parents: fetch all children linked to them and get their batchIds or courseIds
     const parentProfile = await prisma.parentProfile.findUnique({
       where: { userId: user!.userId },
       include: {
-        children: { select: { id: true, batchId: true, fullName: true } }
+        children: { select: { id: true, batchId: true, courseId: true, fullName: true } }
       }
     })
-    const childrenBatchIds = (parentProfile?.children || []).map((c: any) => c.batchId).filter(Boolean)
-    if (childrenBatchIds.length > 0) {
-      where.batchId = { in: childrenBatchIds }
+    const children = parentProfile?.children || []
+    const childrenBatchIds = children.map((c: any) => c.batchId).filter(Boolean)
+    const childrenCourseIds = children.map((c: any) => c.courseId).filter(Boolean)
+
+    if (childrenBatchIds.length > 0 || childrenCourseIds.length > 0) {
+      where.OR = [
+        ...(childrenBatchIds.length > 0 ? [{ batchId: { in: childrenBatchIds } }] : []),
+        ...(childrenCourseIds.length > 0 ? [{ batch: { courseId: { in: childrenCourseIds } } }] : [])
+      ]
     } else {
       return NextResponse.json({ success: true, homeworks: [], studentId: null, children: [] })
     }
 
-    const children = parentProfile?.children || []
     const homeworks = await prisma.homework.findMany({
       where,
       include: {
@@ -99,14 +113,35 @@ export async function POST(req: NextRequest) {
   if (error) return error
 
   const body = await req.json()
-  const { batchId, title, description, subject, dueDate, attachmentUrl } = body
+  const { batchId, courseId, title, description, subject, dueDate, attachmentUrl } = body
 
-  if (!batchId || !title) return NextResponse.json({ error: 'Section/Batch and Title are required' }, { status: 400 })
+  if (!title) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+
+  let resolvedBatchId = batchId
+  if (!resolvedBatchId && courseId) {
+    let batch = await prisma.batch.findFirst({
+      where: { tenantId: user!.tenantId, courseId }
+    })
+    if (!batch) {
+      batch = await prisma.batch.create({
+        data: {
+          tenantId: user!.tenantId,
+          courseId,
+          name: 'Section A',
+        }
+      })
+    }
+    resolvedBatchId = batch.id
+  }
+
+  if (!resolvedBatchId) {
+    return NextResponse.json({ error: 'Class or Section is required' }, { status: 400 })
+  }
 
   const homework = await prisma.homework.create({
     data: {
       tenantId: user!.tenantId,
-      batchId,
+      batchId: resolvedBatchId,
       teacherId: user!.userId,
       title,
       description: description || '',
@@ -125,9 +160,18 @@ export async function POST(req: NextRequest) {
     }
   })
 
-  // Notify students in the batch
+  // Notify students in the batch or class
+  const studentWhere: any = { tenantId: user!.tenantId }
+  if (batchId) {
+    studentWhere.batchId = batchId
+  } else if (courseId) {
+    studentWhere.courseId = courseId
+  } else {
+    studentWhere.batchId = resolvedBatchId
+  }
+
   const students = await prisma.student.findMany({
-    where: { tenantId: user!.tenantId, batchId },
+    where: studentWhere,
     select: { id: true, userId: true, fullName: true },
   })
 

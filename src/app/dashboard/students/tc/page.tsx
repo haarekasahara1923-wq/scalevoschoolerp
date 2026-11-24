@@ -86,9 +86,12 @@ export default function GenerateTCPage() {
     }, [user])
 
     useEffect(() => {
-        if (selectedCourseId && selectedBatchId && token) {
+        if (selectedCourseId && token) {
             setDebugInfo('Fetching students...');
-            fetch(`/api/students?courseId=${selectedCourseId}&batchId=${selectedBatchId}`, {
+            const url = selectedBatchId
+                ? `/api/students?courseId=${selectedCourseId}&batchId=${selectedBatchId}`
+                : `/api/students?courseId=${selectedCourseId}`
+            fetch(url, {
                 headers: { Authorization: `Bearer ${token}` },
                 cache: 'no-store'
             }).then(r => {
@@ -219,9 +222,9 @@ export default function GenerateTCPage() {
                         </select>
                     </div>
                     <div>
-                        <label className="label">Batch</label>
+                        <label className="label">Section / Batch (Optional)</label>
                         <select className="input" value={selectedBatchId} onChange={e => setSelectedBatchId(e.target.value)}>
-                            <option value="">Select Batch</option>
+                            <option value="">-- All Sections / Optional --</option>
                             {batches.filter(b => b.courseId === selectedCourseId).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
                     </div>

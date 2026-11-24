@@ -128,10 +128,6 @@ export default function StaffHomework() {
       setMsg({ text: 'Please select a Class', type: 'error' })
       return
     }
-    if (!selectedBatch) {
-      setMsg({ text: 'Please select a Section / Batch', type: 'error' })
-      return
-    }
     if (!form.title.trim()) {
       setMsg({ text: 'Please enter Homework Title', type: 'error' })
       return
@@ -144,7 +140,8 @@ export default function StaffHomework() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...h },
         body: JSON.stringify({
-          batchId: selectedBatch,
+          courseId: selectedCourse,
+          batchId: selectedBatch || null,
           title: form.title,
           subject: form.subject,
           description: form.description,
@@ -351,16 +348,15 @@ export default function StaffHomework() {
 
             <div>
               <label style={{ fontSize: '12px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px', display: 'block' }}>
-                2. Select Section / Batch *
+                2. Select Section / Batch (Optional)
               </label>
               <select
                 value={selectedBatch}
                 onChange={e => setSelectedBatch(e.target.value)}
                 disabled={!selectedCourse}
                 style={{ ...inputStyle, opacity: !selectedCourse ? 0.5 : 1 }}
-                required
               >
-                <option value="">-- Choose Section --</option>
+                <option value="">-- All Sections / Whole Class (Optional) --</option>
                 {filteredBatches.map(b => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -369,10 +365,10 @@ export default function StaffHomework() {
           </div>
 
           {/* Enrolled Students Badge */}
-          {selectedBatch && batchStudentsCount !== null && (
+          {selectedCourse && batchStudentsCount !== null && (
             <div style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>👥</span>
-              <span><strong>{batchStudentsCount}</strong> student{batchStudentsCount === 1 ? '' : 's'} enrolled in this section will receive this homework.</span>
+              <span><strong>{batchStudentsCount}</strong> student{batchStudentsCount === 1 ? '' : 's'} enrolled {selectedBatch ? 'in this section' : 'in this class'} will receive this homework.</span>
             </div>
           )}
 

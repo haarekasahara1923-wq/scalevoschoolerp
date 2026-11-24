@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface Batch { id: string; name: string; courseId: string; courseName: string }
-interface Student { id: string; fullName: string; batchId: string }
+interface Course { id: string; name: string }
+interface Student { id: string; fullName: string; batchId?: string; courseId?: string }
 
 const statusOptions = [
     { value: 'PRESENT', label: '✅ Present', color: '#10b981' },
@@ -15,8 +16,10 @@ const statusOptions = [
 
 export default function AttendancePage() {
     const { token } = useAuth()
+    const [courses, setCourses] = useState<Course[]>([])
     const [batches, setBatches] = useState<Batch[]>([])
     const [students, setStudents] = useState<Student[]>([])
+    const [selectedCourse, setSelectedCourse] = useState('')
     const [selectedBatch, setSelectedBatch] = useState('')
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
     const [attendance, setAttendance] = useState<Record<string, string>>({})
@@ -27,20 +30,30 @@ export default function AttendancePage() {
     useEffect(() => {
         if (!token) return
         Promise.all([
+            fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
             fetch('/api/batches', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
             fetch('/api/students', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-        ]).then(([b, s]) => {
-            if (b.success) setBatches(b.data)
-            if (s.success) setStudents(s.data)
+        ]).then(([c, b, s]) => {
+            if (c.success) setCourses(c.data || [])
+            if (b.success) setBatches(b.data || [])
+            if (s.success) setStudents(s.data || [])
         })
     }, [token])
 
-    const batchStudents = students.filter(s => s.batchId === selectedBatch)
+    const filteredBatches = batches.filter(b => !selectedCourse || b.courseId === selectedCourse)
+    const batchStudents = students.filter(s => {
+        if (selectedCourse && s.courseId !== selectedCourse) return false
+        if (selectedBatch && s.batchId !== selectedBatch) return false
+        return true
+    })
 
     // Initialize and load existing attendance
     useEffect(() => {
-        if (batchStudents.length > 0 && selectedBatch) {
-            fetch(`/api/attendance?batchId=${selectedBatch}&date=${selectedDate}`, { headers: { Authorization: `Bearer ${token}` } })
+        if (batchStudents.length > 0 && (selectedBatch || selectedCourse)) {
+            const attUrl = selectedBatch
+                ? `/api/attendance?batchId=${selectedBatch}&date=${selectedDate}`
+                : `/api/attendance?courseId=${selectedCourse}&date=${selectedDate}`
+            fetch(attUrl, { headers: { Authorization: `Bearer ${token}` } })
             .then(r => r.json())
             .then(d => {
                 const init: Record<string, string> = {}
@@ -53,7 +66,7 @@ export default function AttendancePage() {
                 setAttendance(init)
             })
         }
-    }, [selectedBatch, selectedDate, token])
+    }, [selectedCourse, selectedBatch, selectedDate, token])
 
     const markAll = (status: string) => {
         const all: Record<string, string> = {}
@@ -62,11 +75,11 @@ export default function AttendancePage() {
     }
 
     const saveAttendance = async () => {
-        if (!selectedBatch || batchStudents.length === 0) return
+        if (batchStudents.length === 0) return
         setSaving(true)
         const records = batchStudents.map(s => ({
             studentId: s.id,
-            batchId: selectedBatch,
+            batchId: s.batchId || selectedBatch || null,
             date: selectedDate,
             status: attendance[s.id] || 'PRESENT',
         }))
@@ -92,7 +105,7 @@ export default function AttendancePage() {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">✅ Attendance Management</h1>
-                    <p className="page-subtitle">Mark daily attendance for batches</p>
+                    <p className="page-subtitle">Mark daily attendance for classes & batches</p>
                 </div>
             </div>
 
@@ -105,11 +118,18 @@ export default function AttendancePage() {
             {/* Controls */}
             <div className="card" style={{ marginBottom: '20px', padding: '20px' }}>
                 <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                        <label className="label">Select Batch</label>
+                    <div style={{ flex: 1, minWidth: '180px' }}>
+                        <label className="label">Select Class</label>
+                        <select className="input" value={selectedCourse} onChange={e => { setSelectedCourse(e.target.value); setSelectedBatch(''); }}>
+                            <option value="">-- All Classes --</option>
+                            {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                    </div>
+                    <div style={{ flex: 1, minWidth: '180px' }}>
+                        <label className="label">Select Section (Optional)</label>
                         <select className="input" value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}>
-                            <option value="">Choose a batch...</option>
-                            {batches.map(b => <option key={b.id} value={b.id}>{b.name} ({b.courseName})</option>)}
+                            <option value="">-- All Sections / Optional --</option>
+                            {filteredBatches.map(b => <option key={b.id} value={b.id}>{b.name} ({b.courseName})</option>)}
                         </select>
                     </div>
                     <div>
@@ -119,7 +139,7 @@ export default function AttendancePage() {
                 </div>
             </div>
 
-            {selectedBatch && batchStudents.length > 0 && (
+            {(selectedCourse || selectedBatch) && batchStudents.length > 0 && (
                 <>
                     {/* Stats */}
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
@@ -203,17 +223,17 @@ export default function AttendancePage() {
                 </>
             )}
 
-            {selectedBatch && batchStudents.length === 0 && (
+            {(selectedCourse || selectedBatch) && batchStudents.length === 0 && (
                 <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>👩‍🎓</div>
-                    <p style={{ color: 'var(--text-secondary)' }}>No students found in this batch</p>
+                    <p style={{ color: 'var(--text-secondary)' }}>No students found in this class / section</p>
                 </div>
             )}
 
-            {!selectedBatch && (
+            {!selectedCourse && !selectedBatch && (
                 <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Select a batch above to mark attendance</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Select a class above to mark attendance</p>
                 </div>
             )}
         </div>
