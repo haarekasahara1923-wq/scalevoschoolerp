@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Check } from 'lucide-react'
 
@@ -47,6 +47,7 @@ const PLANS = [
 
 export default function SchoolSignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState<1 | 2 | 3>(1) // 1=School Info, 2=Admin Credentials, 3=Plan Selection
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -54,6 +55,17 @@ export default function SchoolSignupPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [paymentLoading, setPaymentLoading] = useState(false)
+
+  // Auto-select plan from ?plan= query param (coming from login page)
+  useEffect(() => {
+    const planParam = searchParams.get('plan')
+    if (planParam) {
+      const validKeys = PLANS.map(p => p.key)
+      if (validKeys.includes(planParam)) {
+        setSelectedPlan(planParam)
+      }
+    }
+  }, [searchParams])
 
   const [form, setForm] = useState({
     schoolName: '',

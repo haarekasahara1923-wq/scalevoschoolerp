@@ -3,7 +3,206 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
-import { Eye, EyeOff, ChevronDown } from 'lucide-react'
+import { Eye, EyeOff, ChevronDown, Check, Star, Zap, Shield, Users, BookOpen, BarChart2, Bell, CreditCard } from 'lucide-react'
+
+// ─── Subscription Plans shown below login form ───────────────────────────────
+const LOGIN_PLANS = [
+  {
+    key: 'MONTHLY',
+    label: 'Monthly',
+    emoji: '📅',
+    price: '₹599',
+    period: '/month',
+    duration: '1 Month',
+    color: '#6366f1',
+    glow: 'rgba(99,102,241,0.25)',
+    border: 'rgba(99,102,241,0.4)',
+    features: [
+      'Unlimited Students & Teachers',
+      'Fee & Attendance Management',
+      'Parent & Student Portal',
+      'SMS / WhatsApp Alerts',
+      'Basic Reports & Analytics',
+    ],
+  },
+  {
+    key: 'YEARLY',
+    label: 'Yearly',
+    emoji: '🗓️',
+    price: '₹5,000',
+    period: '/year',
+    duration: '12 Months',
+    color: '#8b5cf6',
+    glow: 'rgba(139,92,246,0.3)',
+    border: 'rgba(139,92,246,0.5)',
+    popular: true,
+    features: [
+      'Everything in Monthly',
+      'Multi-Branch Support',
+      'Advanced Analytics & Reports',
+      'AI Tools & Mock Tests',
+      'Priority Support',
+    ],
+  },
+  {
+    key: 'THREE_YEARLY',
+    label: '3-Year Plan',
+    emoji: '🏆',
+    price: '₹12,000',
+    period: '/3 years',
+    duration: '36 Months',
+    color: '#f59e0b',
+    glow: 'rgba(245,158,11,0.25)',
+    border: 'rgba(245,158,11,0.45)',
+    badge: 'Best Value',
+    features: [
+      'Everything in Yearly',
+      'White-Label Branding',
+      'Custom Domain',
+      'API Access',
+      'Franchise / Chain Mode',
+    ],
+  },
+]
+
+// ─── Feature icon list for the "Why Sclevo?" strip ───────────────────────────
+const WHY_FEATURES = [
+  { icon: <Users size={18} />, label: 'Unlimited Users' },
+  { icon: <CreditCard size={18} />, label: 'Fee Management' },
+  { icon: <Bell size={18} />, label: 'Smart Alerts' },
+  { icon: <BarChart2 size={18} />, label: 'Analytics' },
+  { icon: <BookOpen size={18} />, label: 'Digital Library' },
+  { icon: <Shield size={18} />, label: 'Secure & Reliable' },
+  { icon: <Zap size={18} />, label: 'AI-Powered' },
+  { icon: <Star size={18} />, label: 'Multi-Branch' },
+]
+
+function PricingSection() {
+  const router = useRouter()
+
+  const handlePlanClick = (planKey: string) => {
+    router.push(`/school-signup?plan=${planKey}`)
+  }
+
+  return (
+    <div style={{ width: '100%', maxWidth: '900px', margin: '0 auto', padding: '0 16px 60px' }}>
+      {/* Section heading */}
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '20px', padding: '6px 16px', marginBottom: '14px' }}>
+          <Star size={14} color="#a78bfa" />
+          <span style={{ fontSize: '12px', fontWeight: '700', color: '#a78bfa', letterSpacing: '1px', textTransform: 'uppercase' }}>Subscription Plans</span>
+        </div>
+        <h2 style={{ fontSize: 'clamp(22px,5vw,32px)', fontWeight: '900', color: 'white', margin: '0 0 10px' }}>
+          Apne School ke liye Best Plan Choose Karein
+        </h2>
+        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+          Sabhi plans mein unlimited students, teachers aur features included hain
+        </p>
+      </div>
+
+      {/* Plan cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+        {LOGIN_PLANS.map(plan => (
+          <div
+            key={plan.key}
+            onClick={() => handlePlanClick(plan.key)}
+            style={{
+              background: '#111a0e',
+              border: `1px solid ${plan.border}`,
+              borderRadius: '20px',
+              padding: '24px',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              boxShadow: `0 8px 32px ${plan.glow}`,
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'
+              ;(e.currentTarget as HTMLDivElement).style.boxShadow = `0 16px 48px ${plan.glow}`
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
+              ;(e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 32px ${plan.glow}`
+            }}
+          >
+            {/* Glow blob */}
+            <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '100px', height: '100px', background: plan.glow, borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }} />
+
+            {/* Popular / Best Value badge */}
+            {(plan.popular || plan.badge) && (
+              <div style={{ position: 'absolute', top: '12px', right: '12px', background: plan.color, borderRadius: '8px', padding: '3px 10px', fontSize: '10px', fontWeight: '800', color: 'white', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {plan.popular ? '⭐ Most Popular' : plan.badge}
+              </div>
+            )}
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ width: '44px', height: '44px', background: `${plan.color}20`, border: `1px solid ${plan.color}40`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>
+                {plan.emoji}
+              </div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: 'white' }}>{plan.label}</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>{plan.duration}</div>
+              </div>
+            </div>
+
+            {/* Price */}
+            <div style={{ marginBottom: '16px' }}>
+              <span style={{ fontSize: '36px', fontWeight: '900', color: plan.color, lineHeight: 1 }}>{plan.price}</span>
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginLeft: '4px' }}>{plan.period}</span>
+            </div>
+
+            {/* Features */}
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {plan.features.map(f => (
+                <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
+                  <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: `${plan.color}25`, border: `1px solid ${plan.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Check size={10} color={plan.color} strokeWidth={3} />
+                  </div>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            {/* CTA */}
+            <button
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: `linear-gradient(135deg, ${plan.color}, ${plan.color}bb)`,
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                boxShadow: `0 4px 16px ${plan.glow}`,
+              }}
+            >
+              🚀 Get Started — {plan.price}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Why Sclevo strip */}
+      <div style={{ background: '#111a0e', border: '1px solid rgba(26,92,56,0.25)', borderRadius: '16px', padding: '20px 24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '16px', fontSize: '13px', fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          Why Choose Sclevo ERP?
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+          {WHY_FEATURES.map(wf => (
+            <div key={wf.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.7)' }}>
+              <span style={{ color: '#4ade80' }}>{wf.icon}</span>
+              {wf.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const SCHOOL_TENANT_ID = process.env.NEXT_PUBLIC_SCHOOL_TENANT_ID || ''
 
@@ -71,7 +270,7 @@ function LoginForm() {
   const isAdminSubRole = !!selectedAdminSub
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a1208', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: '#0a1208', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 20px 0' }}>
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 30% 50%, rgba(26,92,56,0.12) 0%, transparent 60%)', pointerEvents: 'none' }} />
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at 70% 50%, rgba(249,115,22,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
@@ -225,6 +424,7 @@ export default function LoginPage() {
   return (
     <AuthProvider>
       <LoginForm />
+      <PricingSection />
     </AuthProvider>
   )
 }
