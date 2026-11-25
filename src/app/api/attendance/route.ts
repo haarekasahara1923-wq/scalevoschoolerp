@@ -253,9 +253,9 @@ export async function POST(req: NextRequest) {
 // Simple web push sender helper function
 async function sendWebPush(sub: any, title: string, body: string) {
     const webpush = require('web-push')
-    // Generate VAPID keys if not set (or use dummy/placeholder)
-    const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_KEY || 'BFG54n2XjD6u05w21Zsz2g5p7fR9n...'
-    const privateVapidKey = process.env.VAPID_PRIVATE_KEY || 'uKq6K9m7Q...'
+    const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_KEY || ''
+    const privateVapidKey = process.env.VAPID_PRIVATE_KEY || ''
+    if (!publicVapidKey || !privateVapidKey) return
     
     webpush.setVapidDetails(
         'mailto:info@udba.space',

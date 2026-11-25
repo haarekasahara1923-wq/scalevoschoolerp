@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { NotificationListener } from '@/components/NotificationListener'
 
 type NavItem = { href: string; icon: string; label: string; color?: string }
 
@@ -28,37 +29,6 @@ function PortalShell({ children }: { children: React.ReactNode }) {
       document.body.style.overflow = ''
     }
   }, [drawerOpen, quickOpen])
-
-  useEffect(() => {
-    if (!isLoading && user && token && 'serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(async (reg) => {
-          let sub = await reg.pushManager.getSubscription()
-          if (!sub) {
-            const pubKey = process.env.NEXT_PUBLIC_VAPID_KEY || 'BFG54n2XjD6u05w21Zsz2g5p7fR9n...'
-            const padding = '='.repeat((4 - pubKey.length % 4) % 4)
-            const base64 = (pubKey + padding).replace(/\-/g, '+').replace(/_/g, '/')
-            const rawData = window.atob(base64)
-            const outputArray = new Uint8Array(rawData.length)
-            for (let i = 0; i < rawData.length; ++i) {
-              outputArray[i] = rawData.charCodeAt(i)
-            }
-            sub = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: outputArray
-            })
-          }
-          await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(sub)
-          })
-        }).catch(err => console.error('Push subscription failed:', err))
-    }
-  }, [user, isLoading, token])
 
   if (isLoading) {
     return (
@@ -506,7 +476,10 @@ function PortalShell({ children }: { children: React.ReactNode }) {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <PortalShell>{children}</PortalShell>
+      <PortalShell>
+        <NotificationListener />
+        {children}
+      </PortalShell>
     </AuthProvider>
   )
 }

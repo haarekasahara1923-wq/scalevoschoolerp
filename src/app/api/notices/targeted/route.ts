@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/app/api/middleware'
+import { sendPushForNotice } from '@/lib/webPush'
 
 export async function POST(req: NextRequest) {
   const { error, user } = requireAuth(req)
@@ -58,6 +59,15 @@ export async function POST(req: NextRequest) {
         createdNotices.push(pNotice)
       }
     }
+
+    // Send Web Push notification to linked parents
+    await sendPushForNotice(user!.tenantId, {
+      title: `📌 To ${student.fullName}'s Parent: ${title}`,
+      message,
+      targetRole: 'PARENT',
+      targetId: student.id,
+      explicitUserIds: student.parentLinks.map(p => p.userId).filter(Boolean) as string[],
+    }).catch(() => {})
 
     return NextResponse.json({ success: true, notices: createdNotices }, { status: 201 })
   } catch (err) {

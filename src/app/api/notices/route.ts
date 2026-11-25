@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/app/api/middleware'
+import { sendPushForNotice } from '@/lib/webPush'
 
 export async function GET(req: NextRequest) {
   const { error, user } = requireAuth(req)
@@ -201,6 +202,14 @@ export async function POST(req: NextRequest) {
       targetId: finalTargetId,
     },
   })
+
+  // Send Web Push notification to all matching recipients (works even when app/browser is closed)
+  await sendPushForNotice(user!.tenantId, {
+    title: finalTitle,
+    message,
+    targetRole: finalTargetRole,
+    targetId: finalTargetId,
+  }).catch(() => {})
 
   return NextResponse.json({ success: true, notice }, { status: 201 })
 }

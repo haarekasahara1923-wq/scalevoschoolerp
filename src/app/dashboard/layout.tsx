@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { hasFeature, NAV_FEATURE_MAP, PlanFeatures } from '@/lib/planLimits'
 import AIGeneratorModal from '@/components/AIGeneratorModal'
+import { NotificationListener } from '@/components/NotificationListener'
 
 const navItems = [
     {
@@ -639,6 +640,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
     return (
         <div>
+            <NotificationListener />
             <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
             <DashboardHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} onAiOpen={() => setAiModalOpen(true)} />
             <main className="main-content" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>

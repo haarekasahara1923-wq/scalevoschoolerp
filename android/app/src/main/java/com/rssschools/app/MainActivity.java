@@ -1,12 +1,19 @@
 package com.rssschools.app;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -20,11 +27,15 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String APP_URL = "https://scalevoschoolerp.vercel.app/login";
+    private static final String CHANNEL_ID = "sclevo_messages_channel";
 
     private WebView webView;
     private SwipeRefreshLayout swipeRefresh;
@@ -64,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
 
         setupSwipeRefresh();
+        createNotificationChannel();
+        requestNotificationPermission();
         setupWebView();
         setupBackNavigation();
 
@@ -101,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
         String customUserAgent = settings.getUserAgentString() + " SclevoSchoolERP/1.0 (Android)";
         settings.setUserAgentString(customUserAgent);
+        webView.addJavascriptInterface(new AndroidNotificationBridge(), "AndroidNotify");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -185,6 +199,71 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.notification);
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .build();
+
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "School Messages & Alerts",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Notifications for internal school messages and notices");
+            channel.setSound(soundUri, audioAttributes);
+            channel.enableVibration(true);
+
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
+    }
+
+    private class AndroidNotificationBridge {
+        @JavascriptInterface
+        public void showNotification(String title, String body) {
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (manager == null) return;
+
+            Intent intent = new Intent(MainActivity.this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    MainActivity.this,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.notification);
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title != null ? title : "Sclevo School ERP")
+                    .setContentText(body != null ? body : "New message received")
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(body != null ? body : ""))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setSound(soundUri)
+                    .setVibrate(new long[]{0, 200, 100, 200})
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent);
+
+            manager.notify((int) (System.currentTimeMillis() & 0xfffffff), builder.build());
+        }
     }
 
     @Override
