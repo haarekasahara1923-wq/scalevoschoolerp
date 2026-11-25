@@ -304,6 +304,7 @@ export default function ParentFeesPage() {
           installmentLabel: 'Collective Sibling Fee Deposit',
           distributions: resp.distributions,
           isCollective: true,
+          parentOnly: true,
           win: printWindow,
         })
 
@@ -330,6 +331,7 @@ export default function ParentFeesPage() {
       },
       tenant: data.school || tenant,
       installmentLabel: payment.notes || 'Fee Installment',
+      parentOnly: true,
     })
   }
 
@@ -350,6 +352,7 @@ export default function ParentFeesPage() {
       installmentLabel: 'Collective Sibling Fee Installment',
       distributions: rec.distributions,
       isCollective: true,
+      parentOnly: true,
     })
   }
 

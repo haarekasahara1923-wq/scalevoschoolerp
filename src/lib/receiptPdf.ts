@@ -33,6 +33,7 @@ export interface ReceiptOptions {
   installmentLabel?: string
   distributions?: any[]
   isCollective?: boolean
+  parentOnly?: boolean
   win?: Window | null
 }
 
@@ -42,7 +43,7 @@ export interface ReceiptOptions {
  * Uses 14px bold typography and includes full details for all siblings in collective receipts.
  */
 export function generateReceiptPDF(opts: ReceiptOptions) {
-  const { receipt, student, tenant, installmentLabel = 'Fee Installment', distributions, isCollective, win: providedWin } = opts
+  const { receipt, student, tenant, installmentLabel = 'Fee Installment', distributions, isCollective, parentOnly = false, win: providedWin } = opts
   const schoolName = tenant?.name || process.env.NEXT_PUBLIC_SCHOOL_NAME || 'RSS Public School'
   const schoolAddress = tenant?.address || process.env.NEXT_PUBLIC_SCHOOL_ADDRESS || 'Ayodhya Nagari, AB Road, Gol Pahadiya, Lashkar, Gwalior (MP)'
   const schoolPhone = tenant?.phone || process.env.NEXT_PUBLIC_SCHOOL_PHONE || '8962678915'
@@ -477,6 +478,11 @@ html,body{background:#f1f5f9;font-family:'Inter',-apple-system,sans-serif;color:
     break-before:avoid !important;
     overflow:hidden !important;
   }
+  .a4-container.parent-only{
+    height:auto !important;
+    max-height:none !important;
+    justify-content:flex-start !important;
+  }
   .receipt-card{
     height:137mm !important;
     max-height:137mm !important;
@@ -503,15 +509,15 @@ html,body{background:#f1f5f9;font-family:'Inter',-apple-system,sans-serif;color:
 </head>
 <body>
 <div class="no-print">
-  <span><strong>Single A4 Page:</strong> Office Copy (top) + Parent Copy (bottom)</span>
+  <span>${parentOnly ? '<strong>Fee Receipt:</strong> Parent Copy' : '<strong>Single A4 Page:</strong> Office Copy (top) + Parent Copy (bottom)'}</span>
   <button onclick="window.print()">🖨️ Print / Save as PDF</button>
 </div>
-<div class="a4-container">
-  ${renderReceiptCard('OFFICE COPY')}
+<div class="a4-container${parentOnly ? ' parent-only' : ''}"${parentOnly ? ' style="height:auto;max-height:none;justify-content:flex-start;"' : ''}>
+  ${parentOnly ? renderReceiptCard('PARENT COPY') : `${renderReceiptCard('OFFICE COPY')}
   <div class="cut-line">
     <span>✂ - - - - - - - - - - - - - - - - - - - - - - - - Cut Along This Line - - - - - - - - - - - - - - - - - - - - - - - - ✂</span>
   </div>
-  ${renderReceiptCard('PARENT COPY')}
+  ${renderReceiptCard('PARENT COPY')}`}
 </div>
 <script>
 window.onload = function() {
