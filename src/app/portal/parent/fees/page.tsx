@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect } from 'react'
 import { generateReceiptPDF } from '@/lib/receiptPdf'
@@ -171,7 +171,7 @@ body{font-family:'Inter',sans-serif;background:#f0f4f8;padding:20px;display:flex
 <body>
 <div class="page">
   <div class="header">
-    <div class="logo-box">${logoUrl ? `<img src="${logoUrl}" alt="Logo" onerror="this.parentElement.textContent='🏫'"/>` : '🏫'}</div>
+    <div class="logo-box">${logoUrl ? `<img src="${logoUrl}" alt="Logo" onerror="this.src='/logo.png'"/>` : '<img src="/logo.png" style="width:100%;height:100%;object-fit:contain;"/>'}</div>
     <div class="school-info">
       <div class="school-name">${schoolName.toUpperCase()}</div>
       <div class="school-sub">

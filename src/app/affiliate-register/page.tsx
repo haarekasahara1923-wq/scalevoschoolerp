@@ -73,7 +73,9 @@ export default function AffiliateRegisterPage() {
 
             <div style={{ width: '100%', maxWidth: '480px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <div style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', margin: '0 auto 16px' }}>💰</div>
+                    <div style={{ width: '64px', height: '64px', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src="/logo.png" alt="Sclevo Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+                    </div>
                     <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'white' }}>Become a Partner</h1>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '6px', fontSize: '14px' }}>Earn 40% on first payment & 20% recurring for every school you refer!</p>
                 </div>

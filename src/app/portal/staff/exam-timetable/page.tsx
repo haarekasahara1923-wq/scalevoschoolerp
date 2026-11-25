@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -87,7 +87,7 @@ table.tt th{padding:11px 14px;font-size:11px;text-align:left;font-weight:700;let
 <div class="page" style="position:relative;">
   <div class="watermark">EXAM SCHEDULE</div>
   <div class="header">
-    <div class="logo-box">${logoUrl ? `<img src="${logoUrl}" alt="Logo" onerror="this.parentElement.textContent='🏫'"/>` : '🏫'}</div>
+    <div class="logo-box">${logoUrl ? `<img src="${logoUrl}" alt="Logo" onerror="this.src='/logo.png'"/>` : '<img src="/logo.png" style="width:100%;height:100%;object-fit:contain;"/>'}</div>
     <div class="school-info">
       <div class="school-name">${schoolName.toUpperCase()}</div>
       <div class="school-sub">

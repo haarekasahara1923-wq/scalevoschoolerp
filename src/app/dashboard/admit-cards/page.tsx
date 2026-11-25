@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -52,7 +52,7 @@ function generateAdmitCardsPrintHTML(eventDetails: any, tenant: any, singleCard?
         <!-- School Header -->
         <div class="header">
           <div class="logo-box">
-            ${schoolLogo ? `<img src="${schoolLogo}" alt="Logo" onerror="this.parentElement.textContent='🏫'"/>` : '<span style="font-size:32px;">🏫</span>'}
+            ${schoolLogo ? `<img src="${schoolLogo}" alt="Logo" onerror="this.src='/logo.png'"/>` : '<span style="font-size:32px;">🏫</span>'}
           </div>
           <div class="header-text">
             <h1 class="school-name">${schoolName}</h1>

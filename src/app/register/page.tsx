@@ -93,7 +93,9 @@ export default function RegisterPage() {
       <div style={{ width: '100%', maxWidth: '480px', position: 'relative' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', margin: '0 auto 14px', boxShadow: '0 8px 30px rgba(139,92,246,0.4)' }}>🏫</div>
+          <div style={{ width: '64px', height: '64px', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/logo.png" alt="Sclevo Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+          </div>
           <h1 style={{ fontSize: '22px', fontWeight: '900', color: 'white' }}>Sclevo School ERP</h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginTop: '4px' }}>School Management Portal — Account Create Karein</p>
         </div>

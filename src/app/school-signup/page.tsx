@@ -276,7 +276,9 @@ function SchoolSignupInner() {
       <div style={{ width: '100%', maxWidth: step === 3 ? '860px' : '520px', position: 'relative', transition: 'max-width 0.3s ease' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', margin: '0 auto 14px', boxShadow: '0 8px 32px rgba(139,92,246,0.4)' }}>🏫</div>
+          <div style={{ width: '72px', height: '72px', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/logo.png" alt="Sclevo Logo" style={{ width: '72px', height: '72px', objectFit: 'contain' }} />
+          </div>
           <div style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px' }}>SCLEVO SCHOOL ERP</div>
           <h1 style={{ fontSize: '24px', fontWeight: '900', color: 'white', lineHeight: 1.2, marginBottom: '8px' }}>Register Your School</h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>Apne school ka digital portal setup karein</p>

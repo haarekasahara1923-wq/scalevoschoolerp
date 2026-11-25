@@ -151,7 +151,7 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                 <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div className="sidebar-logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                            {isSuperAdmin ? '👑' : <img src="/logo.png" alt="RSS Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
+                            <img src="/logo.png" alt="Sclevo Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
                         <div>
                             <div style={{ fontSize: '13px', fontWeight: '800', color: 'white' }}>RSS Public School</div>

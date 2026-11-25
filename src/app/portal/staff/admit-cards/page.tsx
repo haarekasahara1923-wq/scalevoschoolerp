@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -339,7 +339,7 @@ export default function StaffAdmitCards() {
                                     <div class="admit-card-page">
                                         <div class="card-border">
                                             <div class="header">
-                                                <div class="logo-box">${schoolLogo ? `<img src="${schoolLogo}" />` : '🏫'}</div>
+                                                <div class="logo-box">${schoolLogo ? `<img src="${schoolLogo}" />` : '<img src="/logo.png" style="width:100%;height:100%;object-fit:contain;"/>'}</div>
                                                 <div class="header-text">
                                                     <h2 style="margin:0;font-size:18px;text-transform:uppercase;color:#1a237e;">${schoolName}</h2>
                                                     ${schoolAddress ? `<p style="margin:2px 0;font-size:11px;color:#666;">${schoolAddress}</p>` : ''}
@@ -531,7 +531,7 @@ export default function StaffAdmitCards() {
                                             <body>
                                                 <div class="card-border">
                                                     <div class="header">
-                                                        <div class="logo-box">${schoolLogo ? `<img src="${schoolLogo}" />` : '🏫'}</div>
+                                                        <div class="logo-box">${schoolLogo ? `<img src="${schoolLogo}" />` : '<img src="/logo.png" style="width:100%;height:100%;object-fit:contain;"/>'}</div>
                                                         <div class="header-text">
                                                             <h2 style="margin:0;font-size:20px;text-transform:uppercase;color:#1a237e;">${schoolName}</h2>
                                                             ${schoolAddress ? `<p style="margin:2px 0;font-size:12px;color:#666;">${schoolAddress}</p>` : ''}
