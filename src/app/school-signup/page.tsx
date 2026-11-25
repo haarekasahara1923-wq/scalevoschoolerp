@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Check } from 'lucide-react'
@@ -46,6 +46,14 @@ const PLANS = [
 ]
 
 export default function SchoolSignupPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a1208', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>Loading...</div></div>}>
+      <SchoolSignupInner />
+    </Suspense>
+  )
+}
+
+function SchoolSignupInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState<1 | 2 | 3>(1) // 1=School Info, 2=Admin Credentials, 3=Plan Selection
