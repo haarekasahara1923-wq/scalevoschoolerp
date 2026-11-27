@@ -55,10 +55,7 @@ function generateAdmitCardsPrintHTML(eventDetails: any, tenant: any, singleCard?
     return `
     <div class="admit-card-page">
       <div class="card-border">
-        <!-- TOP STRIP -->
         <div class="top-strip"></div>
-
-        <!-- SCHOOL HEADER -->
         <div class="header">
           <div class="logo-box">
             ${schoolLogo ? `<img src="${schoolLogo}" alt="Logo" onerror="this.src='/logo.png'"/>` : '<span style="font-size:28px">🏫</span>'}
@@ -77,7 +74,6 @@ function generateAdmitCardsPrintHTML(eventDetails: any, tenant: any, singleCard?
           </div>
         </div>
 
-        <!-- EXAM BANNER -->
         <div class="exam-banner">
           ✦ &nbsp; ${eventDetails.examName} &nbsp; ✦
           <div style="font-size:10px;font-weight:600;margin-top:2px;opacity:0.9;">
@@ -86,7 +82,6 @@ function generateAdmitCardsPrintHTML(eventDetails: any, tenant: any, singleCard?
           </div>
         </div>
 
-        <!-- STUDENT DETAILS + PHOTO (Upper Half) -->
         <div class="student-section">
           <div class="student-grid">
             <div class="detail-row"><span class="lbl">STUDENT NAME</span><span class="val bold">${card.student.fullName}</span></div>
@@ -106,16 +101,13 @@ function generateAdmitCardsPrintHTML(eventDetails: any, tenant: any, singleCard?
           </div>
         </div>
 
-        <!-- INSTRUCTIONS -->
         <div class="instructions">
           <strong>Instructions:</strong>
           This admit card must be presented at the examination centre. • Report 20 mins early. • No electronic devices allowed. • This card is non-transferable.
         </div>
 
-        <!-- CUT LINE -->
         <div class="cut-line">✂ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ EXAM TIME TABLE ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ✂</div>
 
-        <!-- TIME TABLE (Lower Half) -->
         <div class="tt-section">
           <div class="tt-header-row">
             <div>
@@ -137,7 +129,6 @@ function generateAdmitCardsPrintHTML(eventDetails: any, tenant: any, singleCard?
           </table>` : '<div style="text-align:center;color:#94a3b8;padding:12px;font-size:12px;">Time table not available</div>'}
         </div>
 
-        <!-- SIGNATURES -->
         <div class="signatures">
           <div class="sig-box">
             <div class="sig-line"></div>
@@ -155,7 +146,6 @@ function generateAdmitCardsPrintHTML(eventDetails: any, tenant: any, singleCard?
           </div>
         </div>
 
-        <!-- BOTTOM STRIP -->
         <div class="bottom-strip">
           Official document of ${schoolName} · Roll No: ${rollNo} · This card must be surrendered after the examination
         </div>
@@ -240,9 +230,18 @@ function DashboardAdmitCardsContent() {
   const preselectedEventId = searchParams.get('eventId')
   const { token, tenant, user } = useAuth()
 
-  const [events, setEvents] = useState<any[]>([])
+  // Class, Optional Section, Students dropdowns
   const [courses, setCourses] = useState<any[]>([])
-  const [filterCourse, setFilterCourse] = useState('')
+  const [batches, setBatches] = useState<any[]>([])
+  const [classStudents, setClassStudents] = useState<any[]>([])
+  const [loadingStudents, setLoadingStudents] = useState(false)
+
+  const [selectedCourse, setSelectedCourse] = useState('')
+  const [selectedBatch, setSelectedBatch] = useState('') // Optional!
+  const [selectedStudentId, setSelectedStudentId] = useState('') // Optional student filter
+
+  // Events & details
+  const [events, setEvents] = useState<any[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(preselectedEventId || null)
   const [eventDetails, setEventDetails] = useState<any>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
@@ -250,9 +249,17 @@ function DashboardAdmitCardsContent() {
   const [toast, setToast] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
 
-  // For selective publish: track checked students
+  // Selective publish checkboxes
   const [checkedStudents, setCheckedStudents] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(true)
+
+  // Inline Create Form (Class -> Subject Cards prefilled -> Generate)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [examName, setExamName] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [rows, setRows] = useState<{ date: string; subject: string; startTime: string; endTime: string; duration: string }[]>([])
+  const [creating, setCreating] = useState(false)
 
   const headers = { Authorization: `Bearer ${token}` }
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 4500) }
@@ -268,7 +275,6 @@ function DashboardAdmitCardsContent() {
     else setEventDetails(null)
   }, [selectedEventId])
 
-  // When event details load, initialize checkedStudents (all eligible cards)
   useEffect(() => {
     if (!eventDetails) return
     const eligible = (eventDetails.admitCards || [])
@@ -296,6 +302,72 @@ function DashboardAdmitCardsContent() {
     } catch { }
   }
 
+  // When Class changes: fetch optional sections, fetch students of that class, prefill subject cards, and auto-select matching event
+  const handleCourseChange = async (courseId: string) => {
+    setSelectedCourse(courseId)
+    setSelectedBatch('')
+    setSelectedStudentId('')
+    setBatches([])
+    setClassStudents([])
+
+    if (!courseId) {
+      setRows([])
+      return
+    }
+
+    // Prefill subject cards from course.subjects
+    const courseObj = courses.find((c: any) => c.id === courseId)
+    if (courseObj && Array.isArray(courseObj.subjects) && courseObj.subjects.length > 0) {
+      setRows(courseObj.subjects.map((sub: string) => ({
+        date: '',
+        subject: sub,
+        startTime: '09:00',
+        endTime: '12:00',
+        duration: '3h'
+      })))
+    } else {
+      setRows([])
+    }
+
+    // Fetch optional sections
+    fetch(`/api/batches?courseId=${courseId}`, { headers })
+      .then(r => r.json())
+      .then(d => { if (d.success) setBatches(d.data || []) })
+      .catch(() => {})
+
+    // Fetch students of this class
+    setLoadingStudents(true)
+    try {
+      const res = await fetch(`/api/students?courseId=${courseId}`, { headers })
+      const d = await res.json()
+      if (d.success) setClassStudents(d.data || [])
+    } catch { }
+    setLoadingStudents(false)
+
+    // Auto-select latest event for this class if one exists
+    const matchingEvents = events.filter(e => e.courseId === courseId)
+    if (matchingEvents.length > 0) {
+      setSelectedEventId(matchingEvents[0].id)
+    }
+  }
+
+  // When optional section changes: re-filter/fetch students if needed
+  const handleBatchChange = async (batchId: string) => {
+    setSelectedBatch(batchId)
+    setSelectedStudentId('')
+    if (!selectedCourse) return
+    setLoadingStudents(true)
+    try {
+      const url = batchId
+        ? `/api/students?courseId=${selectedCourse}&batchId=${batchId}`
+        : `/api/students?courseId=${selectedCourse}`
+      const res = await fetch(url, { headers })
+      const d = await res.json()
+      if (d.success) setClassStudents(d.data || [])
+    } catch { }
+    setLoadingStudents(false)
+  }
+
   const fetchEventDetails = async (id: string) => {
     setLoadingDetails(true)
     try {
@@ -304,6 +376,57 @@ function DashboardAdmitCardsContent() {
       if (d.success) setEventDetails(d.data)
     } catch { }
     setLoadingDetails(false)
+  }
+
+  const addRow = () => setRows([...rows, { date: '', subject: '', startTime: '09:00', endTime: '12:00', duration: '3h' }])
+  const removeRow = (i: number) => setRows(rows.filter((_, idx) => idx !== i))
+  const updateRow = (i: number, key: string, val: string) => {
+    const updated = [...rows]
+    updated[i] = { ...updated[i], [key]: val }
+    if ((key === 'startTime' || key === 'endTime') && updated[i].startTime && updated[i].endTime) {
+      updated[i].duration = computeDuration(updated[i].startTime, updated[i].endTime)
+    }
+    setRows(updated)
+  }
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedCourse) { showToast('⚠️ Please select a Class first'); return }
+    if (rows.length === 0) { showToast('⚠️ Add at least one subject to the time table'); return }
+    if (rows.some(r => !r.date || !r.subject || !r.startTime || !r.endTime)) {
+      showToast('⚠️ Please fill Date, Subject, Start Time and End Time for all subjects')
+      return
+    }
+    setCreating(true)
+    try {
+      const res = await fetch('/api/exam-timetable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify({
+          examName,
+          courseId: selectedCourse,
+          batchId: selectedBatch || undefined, // Section is optional
+          startDate,
+          endDate,
+          timeTable: rows
+        }),
+      })
+      const d = await res.json()
+      if (d.success) {
+        showToast('✅ Time Table & Admit Cards generated!')
+        setExamName('')
+        setStartDate('')
+        setEndDate('')
+        setShowCreateForm(false)
+        await fetchEvents()
+        if (d.data?.id) setSelectedEventId(d.data.id)
+      } else {
+        showToast('❌ ' + (d.error || 'Failed to generate'))
+      }
+    } catch {
+      showToast('❌ Network error')
+    }
+    setCreating(false)
   }
 
   const handleAction = async (action: string, studentIds?: string[]) => {
@@ -335,16 +458,17 @@ function DashboardAdmitCardsContent() {
     setActionLoading(false)
   }
 
-  // Publish only the checked (selected) students
   const handlePublishSelected = async () => {
     if (checkedStudents.size === 0) { showToast('⚠️ No students selected'); return }
     await handleAction('publish', Array.from(checkedStudents))
   }
 
-  // Print all eligible (non-blocked, non-TC) cards at once
   const handlePrintAll = () => {
     if (!eventDetails) return
-    const eligible = { ...eventDetails, admitCards: (eventDetails.admitCards || []).filter((c: any) => !c.isBlocked && !c.student?.tcGenerated) }
+    const eligible = {
+      ...eventDetails,
+      admitCards: (eventDetails.admitCards || []).filter((c: any) => !c.isBlocked && !c.student?.tcGenerated)
+    }
     if (eligible.admitCards.length === 0) { showToast('⚠️ No eligible cards to print'); return }
     printCardsWindow(eligible, tenant)
   }
@@ -369,7 +493,10 @@ function DashboardAdmitCardsContent() {
     }
   }
 
-  const filteredEvents = filterCourse ? events.filter(e => e.courseId === filterCourse) : events
+  const filteredEvents = selectedCourse ? events.filter(e => e.courseId === selectedCourse) : events
+  const displayedCards = (eventDetails?.admitCards || []).filter((c: any) =>
+    !selectedStudentId || c.studentId === selectedStudentId
+  )
 
   const totalPublished = eventDetails ? (eventDetails.admitCards || []).filter((c: any) => c.isPublished).length : 0
   const totalBlocked = eventDetails ? (eventDetails.admitCards || []).filter((c: any) => c.isBlocked).length : 0
@@ -393,32 +520,168 @@ function DashboardAdmitCardsContent() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '24px' }}>🎫</span>
             <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
-              Admit Cards Management
+              Admit Cards &amp; Time Table
             </h1>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 0' }}>
-            Select an exam event → manage, publish, block, print/download individual or all admit cards. Blocked &amp; TC students are auto-excluded. Roll No = Scholar No.
+            Select Class → (Optional Section) → Select Student or Generate New Admit Cards &amp; Time Table. Roll No = Scholar No.
           </p>
         </div>
-        <Link href="/dashboard/exam-timetable" style={{
-          background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)',
-          borderRadius: '12px', padding: '10px 16px', color: '#10b981',
-          fontSize: '13px', fontWeight: '700', textDecoration: 'none',
-          display: 'flex', alignItems: 'center', gap: '6px'
-        }}>
-          <span>📅</span> Create Exam Timetable
-        </Link>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <Link href="/dashboard/exam-timetable" style={{
+            background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+            borderRadius: '12px', padding: '10px 16px', color: '#a78bfa',
+            fontSize: '13px', fontWeight: '700', textDecoration: 'none',
+            display: 'flex', alignItems: 'center', gap: '6px'
+          }}>
+            <span>📅</span> Exam Time Tables
+          </Link>
+          <button onClick={() => setShowCreateForm(!showCreateForm)} style={{
+            background: showCreateForm ? 'rgba(239,68,68,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
+            border: showCreateForm ? '1px solid rgba(239,68,68,0.4)' : 'none',
+            borderRadius: '12px', padding: '10px 18px', color: 'white',
+            fontSize: '13px', fontWeight: '800', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: '6px'
+          }}>
+            <span>{showCreateForm ? '✕' : '+'}</span>
+            {showCreateForm ? 'Close Generator' : 'Generate Admit Cards & Time Table'}
+          </button>
+        </div>
       </div>
+
+      {/* ── Class, Section (Optional), & Students Selector Bar ── */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '16px', padding: '16px 20px',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px'
+      }}>
+        <div>
+          <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+            1. Select Class *
+          </label>
+          <select value={selectedCourse} onChange={e => handleCourseChange(e.target.value)}
+            className="input" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', fontSize: '13px' }}>
+            <option value="">-- All Classes --</option>
+            {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+            2. Section / Batch (Optional)
+          </label>
+          <select value={selectedBatch} onChange={e => handleBatchChange(e.target.value)}
+            disabled={!selectedCourse}
+            className="input" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', fontSize: '13px', opacity: !selectedCourse ? 0.55 : 1 }}>
+            <option value="">-- All Sections (Optional) --</option>
+            {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+            3. Select Student (Optional)
+          </label>
+          <select value={selectedStudentId} onChange={e => setSelectedStudentId(e.target.value)}
+            disabled={!selectedCourse || loadingStudents}
+            className="input" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', fontSize: '13px', opacity: !selectedCourse ? 0.55 : 1 }}>
+            <option value="">
+              {!selectedCourse
+                ? '-- Select Class First --'
+                : loadingStudents
+                  ? '⌛ Loading students...'
+                  : `-- All Students (${classStudents.length}) --`}
+            </option>
+            {classStudents.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.fullName} {s.scholarNo ? `(Roll: ${s.scholarNo})` : ''} {s.tcGenerated ? ' [TC]' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ── Inline Generate Form (with Class Subjects Prefill) ── */}
+      {showCreateForm && (
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--primary)',
+          borderRadius: '20px', padding: '22px', boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
+              📝 Generate Time Table &amp; Admit Cards
+            </h2>
+            <span style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '4px 10px', borderRadius: '20px', fontWeight: '700' }}>
+              {selectedCourse ? `Class: ${courses.find(c => c.id === selectedCourse)?.name || ''}` : 'Select Class above'} · Section Optional
+            </span>
+          </div>
+
+          <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '5px', display: 'block' }}>Exam Name *</label>
+                <input type="text" placeholder="e.g. Annual Exam 2026" value={examName} onChange={e => setExamName(e.target.value)}
+                  className="input" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px' }} required />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '5px', display: 'block' }}>Start Date *</label>
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                  className="input" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px' }} required />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '5px', display: 'block' }}>End Date *</label>
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                  className="input" style={{ width: '100%', padding: '10px 12px', borderRadius: '10px' }} required />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                  📋 Subject Cards {rows.length > 0 && <span style={{ fontSize: '11px', color: '#a78bfa', fontWeight: '600' }}>(Pre-filled from class subjects)</span>}
+                </span>
+                <button type="button" onClick={addRow} style={{
+                  background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+                  borderRadius: '8px', padding: '5px 12px', color: '#a78bfa', fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+                }}>+ Add Subject</button>
+              </div>
+
+              {rows.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '12px', border: '2px dashed var(--border)', borderRadius: '10px' }}>
+                  Select a Class in dropdown #1 above to auto-load its subjects, or click "+ Add Subject"
+                </div>
+              ) : rows.map((row, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr 1fr 70px 34px',
+                  gap: '8px', marginBottom: '8px', alignItems: 'center',
+                  background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '10px', border: '1px solid var(--border)'
+                }}>
+                  <input type="date" value={row.date} onChange={e => updateRow(i, 'date', e.target.value)} className="input" style={{ padding: '7px', borderRadius: '8px', fontSize: '12px' }} required />
+                  <input type="text" value={row.subject} onChange={e => updateRow(i, 'subject', e.target.value)} className="input" placeholder="Subject" style={{ padding: '7px', borderRadius: '8px', fontSize: '12px' }} required />
+                  <input type="time" value={row.startTime} onChange={e => updateRow(i, 'startTime', e.target.value)} className="input" style={{ padding: '7px', borderRadius: '8px', fontSize: '12px' }} />
+                  <input type="time" value={row.endTime} onChange={e => updateRow(i, 'endTime', e.target.value)} className="input" style={{ padding: '7px', borderRadius: '8px', fontSize: '12px' }} />
+                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', textAlign: 'center' }}>{row.duration || computeDuration(row.startTime, row.endTime) || '—'}</div>
+                  <button type="button" onClick={() => removeRow(i)} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', padding: '5px' }}>✕</button>
+                </div>
+              ))}
+            </div>
+
+            <button type="submit" disabled={creating} style={{
+              background: creating ? '#374151' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: 'white', padding: '12px', borderRadius: '10px', border: 'none',
+              fontSize: '14px', fontWeight: '800', cursor: creating ? 'not-allowed' : 'pointer'
+            }}>
+              {creating ? '⏳ Generating...' : '🚀 Generate Time Table & Admit Cards'}
+            </button>
+          </form>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
         {/* LEFT: Events List */}
-        <div style={{ flex: '0 0 300px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
-              className="input" style={{ flex: 1, padding: '8px 10px', borderRadius: '10px', fontSize: '12px' }}>
-              <option value="">All Classes</option>
-              {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+        <div style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            Exam Events ({filteredEvents.length})
           </div>
 
           {fetchingEvents ? (
@@ -426,11 +689,14 @@ function DashboardAdmitCardsContent() {
           ) : filteredEvents.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)',
               border: '2px dashed var(--border)', borderRadius: '12px', fontSize: '13px' }}>
-              No exam events found.
+              No exam events found{selectedCourse ? ' for this class' : ''}.
               <br/>
-              <Link href="/dashboard/exam-timetable" style={{ color: '#10b981', textDecoration: 'none', fontWeight: '700' }}>
-                Create one →
-              </Link>
+              <button onClick={() => setShowCreateForm(true)} style={{
+                marginTop: '8px', background: 'none', border: 'none', color: '#10b981',
+                fontWeight: '700', cursor: 'pointer', fontSize: '13px'
+              }}>
+                + Generate Now →
+              </button>
             </div>
           ) : filteredEvents.map(ev => (
             <div key={ev.id} onClick={() => setSelectedEventId(ev.id)} style={{
@@ -461,7 +727,7 @@ function DashboardAdmitCardsContent() {
             <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)',
               border: '2px dashed var(--border)', borderRadius: '16px' }}>
               <div style={{ fontSize: '36px', marginBottom: '8px' }}>👈</div>
-              <div>Select an exam event from the left to manage its admit cards</div>
+              <div>Select an exam event from the left (or click "Generate Admit Cards &amp; Time Table" above)</div>
             </div>
           )}
 
@@ -471,7 +737,6 @@ function DashboardAdmitCardsContent() {
 
           {selectedEventId && !loadingDetails && eventDetails && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {/* Event header */}
               <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
                   <div>
@@ -484,7 +749,6 @@ function DashboardAdmitCardsContent() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {/* Print All (eligible) */}
                     <button onClick={handlePrintAll} style={{
                       background: 'linear-gradient(135deg,#1a237e,#1565c0)',
                       color: 'white', border: 'none', borderRadius: '10px',
@@ -493,7 +757,6 @@ function DashboardAdmitCardsContent() {
                     }}>
                       🖨 Print All Admit Cards
                     </button>
-                    {/* Publish Selected */}
                     <button onClick={handlePublishSelected} disabled={actionLoading || checkedStudents.size === 0} style={{
                       background: checkedStudents.size === 0 ? 'rgba(16,185,129,0.1)' : 'linear-gradient(135deg,#10b981,#059669)',
                       color: 'white', border: 'none', borderRadius: '10px',
@@ -506,7 +769,6 @@ function DashboardAdmitCardsContent() {
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
                   {[
                     { label: 'Total', value: eventDetails.admitCards?.length || 0, color: '#a78bfa' },
@@ -519,12 +781,19 @@ function DashboardAdmitCardsContent() {
                       <div style={{ fontSize: '20px', fontWeight: '800', color: s.color }}>{s.value}</div>
                     </div>
                   ))}
+                  {selectedStudentId && (
+                    <button onClick={() => setSelectedStudentId('')} style={{
+                      marginLeft: 'auto', alignSelf: 'center',
+                      background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+                      color: '#a78bfa', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: '700', cursor: 'pointer'
+                    }}>
+                      ✕ Show All Students
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Student List */}
               <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
-                {/* Header row with select all */}
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)',
                   display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--surface-2)' }}>
                   <input type="checkbox" checked={selectAll} onChange={toggleSelectAll}
@@ -533,13 +802,12 @@ function DashboardAdmitCardsContent() {
                     Student Name &amp; Roll No.
                   </span>
                   <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {(eventDetails.admitCards || []).length} students
+                    {displayedCards.length} student{displayedCards.length !== 1 ? 's' : ''}
                   </span>
                 </div>
 
-                {(eventDetails.admitCards || []).map((card: any) => {
+                {displayedCards.map((card: any) => {
                   const isTcBlocked = card.student?.tcGenerated
-                  const isInactive = card.student?.status !== 'ACTIVE'
                   const isFullyBlocked = card.isBlocked || isTcBlocked
                   const rollNo = card.student?.scholarNo || card.student?.studentId || 'N/A'
 
@@ -558,14 +826,12 @@ function DashboardAdmitCardsContent() {
                       opacity: isFullyBlocked && !card.superAdminApproved ? 0.65 : 1,
                       background: isTcBlocked ? 'rgba(239,68,68,0.04)' : 'transparent'
                     }}>
-                      {/* Checkbox — disabled for TC/blocked */}
                       <input type="checkbox"
                         checked={checkedStudents.has(card.studentId) && !isFullyBlocked}
                         disabled={isFullyBlocked && !card.superAdminApproved}
                         onChange={() => !isFullyBlocked && toggleCheck(card.studentId)}
                         style={{ width: '15px', height: '15px', accentColor: '#6366f1', cursor: isFullyBlocked ? 'not-allowed' : 'pointer' }} />
 
-                      {/* Photo */}
                       <div style={{
                         width: '34px', height: '40px', borderRadius: '6px', overflow: 'hidden',
                         background: 'var(--surface-2)', border: '1px solid var(--border)',
@@ -576,7 +842,6 @@ function DashboardAdmitCardsContent() {
                           : <span style={{ fontSize: '16px' }}>👤</span>}
                       </div>
 
-                      {/* Name & Roll */}
                       <div style={{ flex: 1, minWidth: '120px' }}>
                         <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>
                           {card.student?.fullName}
@@ -587,15 +852,12 @@ function DashboardAdmitCardsContent() {
                         </div>
                       </div>
 
-                      {/* Status badge */}
                       <span style={{
                         fontSize: '10px', fontWeight: '800', padding: '3px 9px', borderRadius: '20px',
                         background: `${statusColor}20`, color: statusColor, border: `1px solid ${statusColor}40`
                       }}>{statusLabel}</span>
 
-                      {/* Actions */}
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {/* Super admin approve blocked */}
                         {card.isBlocked && !card.superAdminApproved && !isTcBlocked &&
                           (user?.role === 'SUPER_ADMIN' || user?.role === 'COACHING_ADMIN') && (
                             <button onClick={() => handleAction('approve', [card.studentId])} style={{
@@ -604,7 +866,6 @@ function DashboardAdmitCardsContent() {
                             }}>⚡ Approve</button>
                           )}
 
-                        {/* Publish single */}
                         {!card.isPublished && (!card.isBlocked || card.superAdminApproved) && !isTcBlocked && (
                           <button onClick={() => handleAction('publish', [card.studentId])} style={{
                             background: '#10b981', color: 'white', border: 'none',
@@ -612,7 +873,6 @@ function DashboardAdmitCardsContent() {
                           }}>Publish</button>
                         )}
 
-                        {/* Unpublish single */}
                         {card.isPublished && (
                           <button onClick={() => handleAction('unpublish', [card.studentId])} style={{
                             background: 'rgba(100,116,139,0.15)', color: '#94a3b8',
@@ -621,7 +881,6 @@ function DashboardAdmitCardsContent() {
                           }}>Unpublish</button>
                         )}
 
-                        {/* Block / Unblock */}
                         {!isTcBlocked && (
                           <button onClick={() => handleAction(card.isBlocked ? 'unblock' : 'block', [card.studentId])} style={{
                             background: card.isBlocked ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
@@ -631,7 +890,6 @@ function DashboardAdmitCardsContent() {
                           }}>{card.isBlocked ? 'Unblock' : 'Block'}</button>
                         )}
 
-                        {/* Print individual card */}
                         {!isTcBlocked && (
                           <button onClick={() => printCardsWindow(eventDetails, tenant, card)} style={{
                             background: 'var(--surface-2)', border: '1px solid var(--border)',

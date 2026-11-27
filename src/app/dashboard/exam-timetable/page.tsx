@@ -167,7 +167,9 @@ export default function DashboardExamTimetable() {
   const [fetchingEvents, setFetchingEvents] = useState(true)
   const [toast, setToast] = useState('')
   const [viewEvent, setViewEvent] = useState<any>(null)
-  const [showForm, setShowForm] = useState(false)
+  const [showForm, setShowForm] = useState(true)
+  const [classStudents, setClassStudents] = useState<any[]>([])
+  const [selectedStudentPreview, setSelectedStudentPreview] = useState('')
 
   // Filters
   const [filterCourse, setFilterCourse] = useState('')
@@ -204,6 +206,8 @@ export default function DashboardExamTimetable() {
   const handleCourseChange = async (courseId: string) => {
     setSelectedCourse(courseId)
     setSelectedBatch('')
+    setSelectedStudentPreview('')
+    setClassStudents([])
     setRows([])
     setSelectedCourseObj(null)
 
@@ -234,7 +238,11 @@ export default function DashboardExamTimetable() {
     try {
       const res = await fetch(`/api/students?courseId=${courseId}`, { headers })
       const data = await res.json()
-      if (data.success) setClassStudentCount(data.data?.length || 0)
+      if (data.success) {
+        const list = data.data || []
+        setClassStudents(list)
+        setClassStudentCount(list.filter((s: any) => s.status === 'ACTIVE' && !s.tcGenerated).length)
+      }
     } catch {
       setClassStudentCount(null)
     }
@@ -447,8 +455,23 @@ export default function DashboardExamTimetable() {
                 <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}
                   className="input" disabled={!selectedCourse}
                   style={{ width: '100%', padding: '12px', borderRadius: '10px', opacity: !selectedCourse ? 0.5 : 1 }}>
-                  <option value="">{batches.length > 0 ? '-- All Sections / Whole Class --' : '-- Whole Class --'}</option>
+                  <option value="">{batches.length > 0 ? '-- All Sections / Whole Class (Optional) --' : '-- Whole Class (Optional) --'}</option>
                   {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '6px', display: 'block' }}>
+                  Students in Class ({classStudents.length})
+                </label>
+                <select value={selectedStudentPreview} onChange={e => setSelectedStudentPreview(e.target.value)}
+                  className="input" disabled={!selectedCourse}
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', opacity: !selectedCourse ? 0.5 : 1 }}>
+                  <option value="">{!selectedCourse ? '-- Select Class First --' : `-- All Eligible Students (${classStudentCount ?? classStudents.length}) --`}</option>
+                  {classStudents.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.fullName} {s.scholarNo ? `(Roll: ${s.scholarNo})` : ''} {s.tcGenerated ? '[TC - Excluded]' : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
