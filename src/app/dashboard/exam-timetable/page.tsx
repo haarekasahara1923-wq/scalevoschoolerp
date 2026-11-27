@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -30,7 +30,7 @@ function computeDuration(start: string, end: string): string {
 
 // ── Premium Branded PDF Generator ─────────────────────────────────────────────
 function generateTimeTablePDF(event: any, tenant: any) {
-  const schoolName = tenant?.name || 'RSS Public School'
+  const schoolName = tenant?.name || 'School'
   const schoolAddress = tenant?.address || ''
   const schoolPhone = tenant?.phone || ''
   const schoolEmail = tenant?.email || ''
@@ -42,21 +42,11 @@ function generateTimeTablePDF(event: any, tenant: any) {
 
   const rows = timetable.map((t: any, i: number) => `
     <tr style="background:${i % 2 === 0 ? '#f8fafc' : '#fff'};">
-      <td style="padding:10px 14px;font-size:13px;border-bottom:1px solid #e2e8f0;font-weight:700;color:#1a3c5e;">
-        ${fmtDate(t.date)}
-      </td>
-      <td style="padding:10px 14px;font-size:13px;border-bottom:1px solid #e2e8f0;font-weight:600;">
-        ${t.subject}
-      </td>
-      <td style="padding:10px 14px;font-size:12px;border-bottom:1px solid #e2e8f0;color:#475569;">
-        ${fmtTime(t.startTime)}
-      </td>
-      <td style="padding:10px 14px;font-size:12px;border-bottom:1px solid #e2e8f0;color:#475569;">
-        ${fmtTime(t.endTime)}
-      </td>
-      <td style="padding:10px 14px;font-size:12px;border-bottom:1px solid #e2e8f0;color:#64748b;font-weight:600;">
-        ${t.duration || computeDuration(t.startTime, t.endTime) || '—'}
-      </td>
+      <td style="padding:10px 14px;font-size:13px;border-bottom:1px solid #e2e8f0;font-weight:700;color:#1a3c5e;">${fmtDate(t.date)}</td>
+      <td style="padding:10px 14px;font-size:13px;border-bottom:1px solid #e2e8f0;font-weight:600;">${t.subject}</td>
+      <td style="padding:10px 14px;font-size:12px;border-bottom:1px solid #e2e8f0;color:#475569;">${fmtTime(t.startTime)}</td>
+      <td style="padding:10px 14px;font-size:12px;border-bottom:1px solid #e2e8f0;color:#475569;">${fmtTime(t.endTime)}</td>
+      <td style="padding:10px 14px;font-size:12px;border-bottom:1px solid #e2e8f0;color:#64748b;font-weight:600;">${t.duration || computeDuration(t.startTime, t.endTime) || '—'}</td>
     </tr>`
   ).join('')
 
@@ -91,15 +81,14 @@ table.tt th{padding:11px 14px;font-size:11px;text-align:left;font-weight:700;let
 .sig-line{width:180px;height:50px;border-bottom:1.5px solid #0f172a;margin-bottom:5px;display:flex;align-items:flex-end;justify-content:center;}
 .sig-line img{max-height:48px;max-width:160px;object-fit:contain;}
 .sig-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;}
-.watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:80px;font-weight:900;color:rgba(26,35,126,0.04);pointer-events:none;white-space:nowrap;z-index:0;}
 @media print{body{background:#fff;padding:0;}.page{width:100%;box-shadow:none;}@page{margin:0;size:A4;}}
 </style>
 </head>
 <body>
-<div class="page" style="position:relative;">
-  <div class="watermark">EXAM SCHEDULE</div>
+<div class="page">
   <div class="header">
-    <div class="logo-box">${logoUrl ? `<img src="${logoUrl}" alt="Logo" onerror="this.src='/logo.png'"/>` : '<img src="/logo.png" style="width:100%;height:100%;object-fit:contain;"/>'}</div>
+    <div class="logo-box">${logoUrl ? `<img src="${logoUrl}" alt="Logo" onerror="this.src='/logo.png'"/>` : '<img src="/logo.png" style="width:100%;height:100%;object-fit:contain;"/>'}
+    </div>
     <div class="school-info">
       <div class="school-name">${schoolName.toUpperCase()}</div>
       <div class="school-sub">
@@ -135,7 +124,7 @@ table.tt th{padding:11px 14px;font-size:11px;text-align:left;font-weight:700;let
   <div class="footer">
     <div class="note">
       <strong>Important Examination Instructions:</strong><br/>
-      • Bring this official time table & Admit Card to the exam hall.<br/>
+      • Bring this official time table &amp; Admit Card to the exam hall.<br/>
       • Students must report 20 minutes before examination commences.<br/>
       • Any unfair means or electronic gadgets will lead to cancellation.
     </div>
@@ -163,6 +152,7 @@ export default function DashboardExamTimetable() {
   const [courses, setCourses] = useState<any[]>([])
   const [batches, setBatches] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
+  const [selectedCourseObj, setSelectedCourseObj] = useState<any>(null)
 
   // Form state
   const [selectedCourse, setSelectedCourse] = useState('')
@@ -210,15 +200,37 @@ export default function DashboardExamTimetable() {
     }
   }
 
+  // When class changes: load batches, student count, and PRE-FILL subjects from course.subjects
   const handleCourseChange = async (courseId: string) => {
     setSelectedCourse(courseId)
     setSelectedBatch('')
+    setRows([])
+    setSelectedCourseObj(null)
+
     if (!courseId) {
       setBatches([])
       setClassStudentCount(null)
       return
     }
+
     fetchBatches(courseId)
+
+    // Find course object to get its subjects[]
+    const courseObj = courses.find((c: any) => c.id === courseId)
+    setSelectedCourseObj(courseObj || null)
+
+    // Pre-fill rows from course subjects
+    if (courseObj && Array.isArray(courseObj.subjects) && courseObj.subjects.length > 0) {
+      const prefilled = courseObj.subjects.map((sub: string) => ({
+        date: '',
+        subject: sub,
+        startTime: '09:00',
+        endTime: '12:00',
+        duration: '3h'
+      }))
+      setRows(prefilled)
+    }
+
     try {
       const res = await fetch(`/api/students?courseId=${courseId}`, { headers })
       const data = await res.json()
@@ -254,6 +266,8 @@ export default function DashboardExamTimetable() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (rows.length === 0) { showToast('⚠️ Add at least one subject to the exam time table'); return }
+    const incomplete = rows.some(r => !r.date || !r.subject || !r.startTime || !r.endTime)
+    if (incomplete) { showToast('⚠️ Please fill Date, Subject, Start Time and End Time for all rows'); return }
     setLoading(true)
     try {
       const res = await fetch('/api/exam-timetable', {
@@ -286,10 +300,7 @@ export default function DashboardExamTimetable() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete "${name}"? This will also remove associated admit cards.`)) return
     try {
-      const res = await fetch(`/api/admit-cards/${id}`, {
-        method: 'DELETE',
-        headers,
-      })
+      const res = await fetch(`/api/admit-cards/${id}`, { method: 'DELETE', headers })
       const d = await res.json()
       if (d.success) {
         showToast('🗑️ Exam Time Table deleted successfully')
@@ -310,6 +321,7 @@ export default function DashboardExamTimetable() {
     setSelectedBatch('')
     setRows([])
     setClassStudentCount(null)
+    setSelectedCourseObj(null)
   }
 
   const showToast = (msg: string) => {
@@ -317,9 +329,7 @@ export default function DashboardExamTimetable() {
     setTimeout(() => setToast(''), 4000)
   }
 
-  const filteredEvents = filterCourse
-    ? events.filter(e => e.courseId === filterCourse)
-    : events
+  const filteredEvents = filterCourse ? events.filter(e => e.courseId === filterCourse) : events
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -346,82 +356,52 @@ export default function DashboardExamTimetable() {
             </h1>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 0' }}>
-            Create class-wise examination schedules, print official timetables, and publish admit cards to parents & students.
+            Select a class → subjects auto-fill from class setup → add dates & times → Generate. Admit cards auto-create for all eligible students.
           </p>
         </div>
-
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <Link
-            href="/dashboard/admit-cards"
-            style={{
-              background: 'rgba(139,92,246,0.15)',
-              border: '1px solid rgba(139,92,246,0.35)',
-              borderRadius: '12px',
-              padding: '10px 16px',
-              color: '#a78bfa',
-              fontSize: '13px',
-              fontWeight: '700',
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>🎫</span> Admit Cards Flow
+          <Link href="/dashboard/admit-cards" style={{
+            background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)',
+            borderRadius: '12px', padding: '10px 16px', color: '#a78bfa',
+            fontSize: '13px', fontWeight: '700', textDecoration: 'none',
+            display: 'flex', alignItems: 'center', gap: '6px'
+          }}>
+            <span>🎫</span> Manage Admit Cards
           </Link>
-
-          <button
-            onClick={() => setShowForm(!showForm)}
-            style={{
-              background: showForm ? 'rgba(239,68,68,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
-              border: showForm ? '1px solid rgba(239,68,68,0.4)' : 'none',
-              borderRadius: '12px',
-              padding: '10px 18px',
-              color: 'white',
-              fontSize: '13px',
-              fontWeight: '800',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 4px 14px rgba(16,185,129,0.3)'
-            }}
-          >
+          <button onClick={() => setShowForm(!showForm)} style={{
+            background: showForm ? 'rgba(239,68,68,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
+            border: showForm ? '1px solid rgba(239,68,68,0.4)' : 'none',
+            borderRadius: '12px', padding: '10px 18px', color: 'white',
+            fontSize: '13px', fontWeight: '800', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: '6px',
+            boxShadow: '0 4px 14px rgba(16,185,129,0.3)'
+          }}>
             <span>{showForm ? '✕' : '+'}</span>
             {showForm ? 'Close Form' : 'Create Exam Time Table'}
           </button>
         </div>
       </div>
 
-      {/* Overview Stats Cards */}
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '16px 20px', borderRadius: '16px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Timetables</div>
-          <div style={{ fontSize: '26px', fontWeight: '800', color: 'var(--primary)', marginTop: '4px' }}>{events.length}</div>
-        </div>
-        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '16px 20px', borderRadius: '16px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Papers Scheduled</div>
-          <div style={{ fontSize: '26px', fontWeight: '800', color: '#10b981', marginTop: '4px' }}>
-            {events.reduce((sum, e) => sum + (Array.isArray(e.timeTable) ? e.timeTable.length : 0), 0)}
+        {[
+          { label: 'Total Timetables', value: events.length, color: 'var(--primary)' },
+          { label: 'Total Papers Scheduled', value: events.reduce((s, e) => s + (Array.isArray(e.timeTable) ? e.timeTable.length : 0), 0), color: '#10b981' },
+          { label: 'Total Admit Cards', value: events.reduce((s, e) => s + (e._count?.admitCards || 0), 0), color: '#f59e0b' },
+        ].map((stat, i) => (
+          <div key={i} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '16px 20px', borderRadius: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{stat.label}</div>
+            <div style={{ fontSize: '26px', fontWeight: '800', color: stat.color, marginTop: '4px' }}>{stat.value}</div>
           </div>
-        </div>
-        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '16px 20px', borderRadius: '16px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Admit Cards Linked</div>
-          <div style={{ fontSize: '26px', fontWeight: '800', color: '#f59e0b', marginTop: '4px' }}>
-            {events.reduce((sum, e) => sum + (e._count?.admitCards || 0), 0)}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* ── Create New Timetable Form ────────────────────────────────────── */}
+      {/* ── Create Form ── */}
       {showForm && (
         <div style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--primary)',
-          borderRadius: '20px',
-          padding: '24px',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
-          animation: 'fadeIn 0.2s ease-in-out'
+          background: 'var(--surface)', border: '1px solid var(--primary)',
+          borderRadius: '20px', padding: '24px',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.3)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -431,46 +411,43 @@ export default function DashboardExamTimetable() {
               </h2>
             </div>
             <span style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '4px 10px', borderRadius: '20px', fontWeight: '700' }}>
-              Auto Generates Student Admit Cards
+              Auto-creates Admit Cards for eligible students
             </span>
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Class & Section Selection */}
+            {/* Class & Batch */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
               <div>
                 <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '6px', display: 'block' }}>
                   Select Class / Course *
                 </label>
-                <select
-                  value={selectedCourse}
-                  onChange={e => handleCourseChange(e.target.value)}
-                  className="input"
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px' }}
-                  required
-                >
+                <select value={selectedCourse} onChange={e => handleCourseChange(e.target.value)}
+                  className="input" style={{ width: '100%', padding: '12px', borderRadius: '10px' }} required>
                   <option value="">-- Choose Class --</option>
                   {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 {classStudentCount !== null && (
                   <div style={{ fontSize: '12px', color: classStudentCount > 0 ? '#10b981' : '#ef4444', fontWeight: '700', marginTop: '6px' }}>
-                    {classStudentCount > 0 ? `👥 ${classStudentCount} Active Students will receive this Admit Card` : '⚠️ No active students found in this class'}
+                    {classStudentCount > 0
+                      ? `👥 ${classStudentCount} Active Students — Blocked/TC students excluded automatically`
+                      : '⚠️ No active students found in this class'}
+                  </div>
+                )}
+                {selectedCourseObj && Array.isArray(selectedCourseObj.subjects) && selectedCourseObj.subjects.length > 0 && (
+                  <div style={{ fontSize: '11px', color: '#a78bfa', background: 'rgba(139,92,246,0.1)', padding: '6px 10px', borderRadius: '8px', marginTop: '6px' }}>
+                    ✨ <strong>{selectedCourseObj.subjects.length} subjects</strong> pre-filled from class setup. Add dates & times below.
                   </div>
                 )}
               </div>
-
               <div>
                 <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '6px', display: 'block' }}>
                   Section / Batch (Optional)
                 </label>
-                <select
-                  value={selectedBatch}
-                  onChange={e => setSelectedBatch(e.target.value)}
-                  className="input"
-                  disabled={!selectedCourse}
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', opacity: !selectedCourse ? 0.5 : 1 }}
-                >
-                  <option value="">{batches.length > 0 ? '-- All Sections / Whole Class --' : '-- Whole Class (No Sections) --'}</option>
+                <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}
+                  className="input" disabled={!selectedCourse}
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', opacity: !selectedCourse ? 0.5 : 1 }}>
+                  <option value="">{batches.length > 0 ? '-- All Sections / Whole Class --' : '-- Whole Class --'}</option>
                   {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
@@ -481,389 +458,237 @@ export default function DashboardExamTimetable() {
               <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '6px', display: 'block' }}>
                 Exam Title / Name *
               </label>
-              <input
-                type="text"
-                placeholder="e.g. Mid Term Exam 2026 / Annual Examination"
-                value={examName}
-                onChange={e => setExamName(e.target.value)}
-                className="input"
-                style={{ width: '100%', padding: '12px', borderRadius: '10px' }}
-                required
-              />
+              <input type="text" placeholder="e.g. Mid Term Exam 2026 / Annual Examination"
+                value={examName} onChange={e => setExamName(e.target.value)}
+                className="input" style={{ width: '100%', padding: '12px', borderRadius: '10px' }} required />
             </div>
 
-            {/* Start & End Dates */}
+            {/* Dates */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
               <div>
                 <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '6px', display: 'block' }}>
                   Exam Start Date *
                 </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  className="input"
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px' }}
-                  required
-                />
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                  className="input" style={{ width: '100%', padding: '12px', borderRadius: '10px' }} required />
               </div>
               <div>
                 <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '6px', display: 'block' }}>
                   Exam End Date *
                 </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  className="input"
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px' }}
-                  required
-                />
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                  className="input" style={{ width: '100%', padding: '12px', borderRadius: '10px' }} required />
               </div>
             </div>
 
-            {/* Subject Time Table Schedule Builder */}
-            <div style={{ background: 'var(--surface-2)', padding: '16px', borderRadius: '14px', border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)' }}>
-                    📚 Exam Time Table Subjects ({rows.length} added)
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Add all papers with dates and timings. This timetable will be printed below each admit card.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={addRow}
-                  style={{
-                    background: 'var(--primary)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '8px 14px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer'
-                  }}
-                >
-                  + Add Subject
+            {/* Subject Rows — prefilled from course.subjects */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <label style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '800' }}>
+                  📋 Exam Schedule (Subject-wise)
+                  {selectedCourseObj?.subjects?.length > 0 && (
+                    <span style={{ fontSize: '11px', color: '#a78bfa', marginLeft: '8px', fontWeight: '600' }}>
+                      (Pre-filled from class subjects — just add dates & times)
+                    </span>
+                  )}
+                </label>
+                <button type="button" onClick={addRow} style={{
+                  background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+                  borderRadius: '8px', padding: '6px 14px', color: '#a78bfa',
+                  fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+                }}>
+                  + Add Subject Row
                 </button>
               </div>
 
-              {rows.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: '10px', fontSize: '13px' }}>
-                  Click <strong>"+ Add Subject"</strong> to enter exam dates, subjects, and timings.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {rows.map((row, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: 'var(--surface)',
-                        border: '1px solid var(--border)',
-                        padding: '12px',
-                        borderRadius: '10px',
-                        display: 'grid',
-                        gridTemplateColumns: '1.2fr 2fr 1fr 1fr 1fr auto',
-                        gap: '8px',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Date *</label>
-                        <input
-                          type="date"
-                          value={row.date}
-                          onChange={e => updateRow(idx, 'date', e.target.value)}
-                          className="input"
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', fontSize: '12px' }}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Subject / Paper *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Science / Mathematics"
-                          value={row.subject}
-                          onChange={e => updateRow(idx, 'subject', e.target.value)}
-                          className="input"
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', fontSize: '12px' }}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Start Time</label>
-                        <input
-                          type="time"
-                          value={row.startTime}
-                          onChange={e => updateRow(idx, 'startTime', e.target.value)}
-                          className="input"
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', fontSize: '12px' }}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>End Time</label>
-                        <input
-                          type="time"
-                          value={row.endTime}
-                          onChange={e => updateRow(idx, 'endTime', e.target.value)}
-                          className="input"
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', fontSize: '12px' }}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Duration</label>
-                        <input
-                          type="text"
-                          value={row.duration}
-                          readOnly
-                          className="input"
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', fontSize: '12px', color: '#10b981', fontWeight: '700' }}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeRow(idx)}
-                        style={{
-                          background: 'rgba(239,68,68,0.15)',
-                          border: '1px solid rgba(239,68,68,0.3)',
-                          color: '#ef4444',
-                          padding: '8px 10px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          marginTop: '14px'
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+              {rows.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px',
+                  border: '2px dashed var(--border)', borderRadius: '12px' }}>
+                  Select a class above to auto-load its subjects, or click "+ Add Subject Row"
                 </div>
               )}
+
+              {rows.map((row, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 80px 36px',
+                  gap: '8px', marginBottom: '8px', alignItems: 'center',
+                  background: 'var(--surface-2)', padding: '10px 12px',
+                  borderRadius: '10px', border: '1px solid var(--border)'
+                }}>
+                  <input type="date" value={row.date} onChange={e => updateRow(i, 'date', e.target.value)}
+                    className="input" style={{ padding: '8px', borderRadius: '8px', fontSize: '12px' }}
+                    placeholder="Date" required />
+                  <input type="text" value={row.subject} onChange={e => updateRow(i, 'subject', e.target.value)}
+                    className="input" style={{ padding: '8px', borderRadius: '8px', fontSize: '12px' }}
+                    placeholder="Subject / Paper" required />
+                  <input type="time" value={row.startTime} onChange={e => updateRow(i, 'startTime', e.target.value)}
+                    className="input" style={{ padding: '8px', borderRadius: '8px', fontSize: '12px' }} />
+                  <input type="time" value={row.endTime} onChange={e => updateRow(i, 'endTime', e.target.value)}
+                    className="input" style={{ padding: '8px', borderRadius: '8px', fontSize: '12px' }} />
+                  <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '700', textAlign: 'center' }}>
+                    {row.duration || computeDuration(row.startTime, row.endTime) || '—'}
+                  </div>
+                  <button type="button" onClick={() => removeRow(i)} style={{
+                    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                    borderRadius: '6px', color: '#ef4444', cursor: 'pointer',
+                    padding: '6px 8px', fontSize: '14px', fontWeight: '800'
+                  }}>✕</button>
+                </div>
+              ))}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: 'white',
-                border: 'none',
-                padding: '14px',
-                borderRadius: '12px',
-                fontWeight: '800',
-                fontSize: '14px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-                boxShadow: '0 4px 16px rgba(16,185,129,0.35)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              {loading ? '⏳ Generating Time Table & Admit Cards...' : '🚀 Generate Exam Time Table & Admit Cards'}
+            <button type="submit" disabled={loading} style={{
+              background: loading ? '#374151' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: 'white', padding: '14px', borderRadius: '12px',
+              border: 'none', fontSize: '14px', fontWeight: '800',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: '0 4px 14px rgba(99,102,241,0.4)'
+            }}>
+              {loading ? '⏳ Generating...' : '🚀 Generate Time Table & Admit Cards'}
             </button>
           </form>
         </div>
       )}
 
-      {/* Filter by Class */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <select
-          value={filterCourse}
-          onChange={e => setFilterCourse(e.target.value)}
-          className="input"
-          style={{ minWidth: '200px', padding: '10px 14px', borderRadius: '10px' }}
-        >
+      {/* ── Filter */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <select value={filterCourse} onChange={e => setFilterCourse(e.target.value)}
+          className="input" style={{ padding: '8px 12px', borderRadius: '10px', fontSize: '13px', minWidth: '200px' }}>
           <option value="">All Classes</option>
           {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        {filterCourse && (
-          <button
-            onClick={() => setFilterCourse('')}
-            style={{ background: 'none', border: 'none', color: '#a78bfa', fontSize: '12px', cursor: 'pointer', fontWeight: '700' }}
-          >
-            Clear Filter
-          </button>
-        )}
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+          {filteredEvents.length} timetable{filteredEvents.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
-      {/* ── Timetables List ─────────────────────────────────────────────── */}
-      <div>
-        {fetchingEvents ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading timetables...</div>
-        ) : filteredEvents.length === 0 ? (
-          <div style={{ background: 'var(--surface-2)', border: '1px dashed var(--border)', borderRadius: '16px', padding: '40px', textAlign: 'center' }}>
-            <div style={{ fontSize: '42px', marginBottom: '10px' }}>📋</div>
-            <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>No Exam Timetables Found</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '6px 0 16px' }}>
-              Create an exam schedule above to generate printable timetables and student admit cards.
-            </p>
-            <button
-              onClick={() => setShowForm(true)}
-              style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '10px', padding: '10px 18px', fontWeight: '700', cursor: 'pointer' }}
-            >
-              + Create First Timetable
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {filteredEvents.map(ev => {
-              const isExpanded = viewEvent?.id === ev.id
-              const tt: any[] = Array.isArray(ev.timeTable) ? ev.timeTable : []
-              return (
-                <div
-                  key={ev.id}
-                  style={{
-                    background: 'var(--surface-2)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  {/* Card Header Row */}
-                  <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                        📋
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)' }}>
-                          {ev.examName}
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                          <span style={{ color: '#a78bfa', fontWeight: '600' }}>📚 {ev.course?.name}{ev.batch?.name ? ` · ${ev.batch.name}` : ''}</span>
-                          <span>📅 {fmtDate(ev.startDate)} → {fmtDate(ev.endDate)}</span>
-                          <span style={{ color: '#10b981', fontWeight: '600' }}>👥 {ev._count?.admitCards || 0} Admit Cards</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => generateTimeTablePDF(ev, tenant)}
-                        style={{
-                          background: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '10px',
-                          padding: '8px 14px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        📥 Print / PDF
-                      </button>
-
-                      <Link
-                        href={`/dashboard/admit-cards?eventId=${ev.id}`}
-                        style={{
-                          background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                          color: 'white',
-                          borderRadius: '10px',
-                          padding: '8px 14px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        🎫 Admit Cards
-                      </Link>
-
-                      <button
-                        onClick={() => handleDelete(ev.id, ev.examName)}
-                        style={{
-                          background: 'rgba(239,68,68,0.1)',
-                          border: '1px solid rgba(239,68,68,0.25)',
-                          color: '#ef4444',
-                          borderRadius: '10px',
-                          padding: '8px 12px',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          fontWeight: '700'
-                        }}
-                      >
-                        🗑️
-                      </button>
-
-                      <button
-                        onClick={() => setViewEvent(isExpanded ? null : ev)}
-                        style={{
-                          background: 'var(--surface)',
-                          border: '1px solid var(--border)',
-                          color: 'var(--text-primary)',
-                          borderRadius: '10px',
-                          padding: '8px 12px',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          fontWeight: '700'
-                        }}
-                      >
-                        {isExpanded ? 'Hide ▲' : `${tt.length} Papers ▼`}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Expanded Table Schedule View */}
-                  {isExpanded && (
-                    <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)', padding: '16px 20px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: '800', color: '#a78bfa', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.5px' }}>
-                        Examination Schedule ({tt.length} Papers)
-                      </div>
-                      {tt.length === 0 ? (
-                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>No subjects added in this timetable.</div>
-                      ) : (
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                            <thead>
-                              <tr style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
-                                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>#</th>
-                                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Date</th>
-                                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Subject / Paper</th>
-                                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Start Time</th>
-                                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>End Time</th>
-                                <th style={{ padding: '10px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Duration</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {tt.map((t: any, i: number) => (
-                                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '10px', color: 'var(--text-muted)' }}>{i + 1}</td>
-                                  <td style={{ padding: '10px', fontWeight: '700', color: 'var(--text-primary)' }}>{fmtDate(t.date)}</td>
-                                  <td style={{ padding: '10px', fontWeight: '600', color: '#a78bfa' }}>{t.subject}</td>
-                                  <td style={{ padding: '10px', color: 'var(--text-muted)' }}>{fmtTime(t.startTime)}</td>
-                                  <td style={{ padding: '10px', color: 'var(--text-muted)' }}>{fmtTime(t.endTime)}</td>
-                                  <td style={{ padding: '10px', color: '#10b981', fontWeight: '700' }}>
-                                    {t.duration || computeDuration(t.startTime, t.endTime) || '—'}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  )}
+      {/* ── Events List ── */}
+      {fetchingEvents ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
+      ) : filteredEvents.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)',
+          border: '2px dashed var(--border)', borderRadius: '16px' }}>
+          <div style={{ fontSize: '36px', marginBottom: '8px' }}>📅</div>
+          <div>No exam timetables created yet.</div>
+          <div style={{ fontSize: '12px', marginTop: '4px' }}>Click "Create Exam Time Table" to get started.</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {filteredEvents.map(event => (
+            <div key={event.id} style={{
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: '16px', padding: '18px 20px',
+              display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)' }}>{event.examName}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                  {event.course?.name}{event.batch?.name ? ` — ${event.batch.name}` : ''} &nbsp;·&nbsp;
+                  {fmtDate(event.startDate)} → {fmtDate(event.endDate)}
                 </div>
-              )
-            })}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '11px', background: 'rgba(99,102,241,0.15)', color: '#a78bfa', padding: '2px 8px', borderRadius: '20px', fontWeight: '700' }}>
+                    {Array.isArray(event.timeTable) ? event.timeTable.length : 0} Papers
+                  </span>
+                  <span style={{ fontSize: '11px', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 8px', borderRadius: '20px', fontWeight: '700' }}>
+                    {event._count?.admitCards || 0} Admit Cards
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button onClick={() => setViewEvent(event)} style={{
+                  background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)',
+                  borderRadius: '10px', padding: '8px 14px', color: '#a78bfa',
+                  fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+                }}>👁 View</button>
+                <button onClick={() => generateTimeTablePDF(event, tenant)} style={{
+                  background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)',
+                  borderRadius: '10px', padding: '8px 14px', color: '#10b981',
+                  fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+                }}>🖨 Print Timetable</button>
+                <Link href={`/dashboard/admit-cards?eventId=${event.id}`} style={{
+                  background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)',
+                  borderRadius: '10px', padding: '8px 14px', color: '#f59e0b',
+                  fontSize: '12px', fontWeight: '700', cursor: 'pointer', textDecoration: 'none',
+                  display: 'flex', alignItems: 'center', gap: '4px'
+                }}>🎫 Manage Admit Cards</Link>
+                <button onClick={() => handleDelete(event.id, event.examName)} style={{
+                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: '10px', padding: '8px 14px', color: '#ef4444',
+                  fontSize: '12px', fontWeight: '700', cursor: 'pointer'
+                }}>🗑 Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── View Modal ── */}
+      {viewEvent && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+          zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }} onClick={() => setViewEvent(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--surface)', borderRadius: '20px', padding: '24px',
+            maxWidth: '700px', width: '100%', maxHeight: '80vh', overflowY: 'auto',
+            border: '1px solid var(--border)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
+                {viewEvent.examName}
+              </h2>
+              <button onClick={() => setViewEvent(null)} style={{
+                background: 'var(--surface-2)', border: '1px solid var(--border)',
+                borderRadius: '8px', padding: '6px 12px', color: 'var(--text-muted)', cursor: 'pointer'
+              }}>✕ Close</button>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+              {viewEvent.course?.name}{viewEvent.batch?.name ? ` — ${viewEvent.batch.name}` : ''} &nbsp;·&nbsp;
+              {fmtDate(viewEvent.startDate)} → {fmtDate(viewEvent.endDate)}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ background: 'var(--surface-2)' }}>
+                  {['#', 'Date', 'Subject', 'Start', 'End', 'Duration'].map(h => (
+                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px',
+                      color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(Array.isArray(viewEvent.timeTable) ? viewEvent.timeTable : []).map((t: any, i: number) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{i + 1}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: '700' }}>{fmtDate(t.date)}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: '600' }}>{t.subject}</td>
+                    <td style={{ padding: '10px 12px' }}>{fmtTime(t.startTime)}</td>
+                    <td style={{ padding: '10px 12px' }}>{fmtTime(t.endTime)}</td>
+                    <td style={{ padding: '10px 12px', color: '#10b981', fontWeight: '700' }}>
+                      {t.duration || computeDuration(t.startTime, t.endTime)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button onClick={() => generateTimeTablePDF(viewEvent, tenant)} style={{
+                background: 'linear-gradient(135deg, #1a237e, #1565c0)',
+                color: 'white', border: 'none', borderRadius: '10px',
+                padding: '10px 18px', fontSize: '13px', fontWeight: '700', cursor: 'pointer'
+              }}>🖨 Print / Download PDF</button>
+              <Link href={`/dashboard/admit-cards?eventId=${viewEvent.id}`} onClick={() => setViewEvent(null)} style={{
+                background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)',
+                borderRadius: '10px', padding: '10px 18px', color: '#f59e0b',
+                fontSize: '13px', fontWeight: '700', textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: '4px'
+              }}>🎫 Go to Admit Cards</Link>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

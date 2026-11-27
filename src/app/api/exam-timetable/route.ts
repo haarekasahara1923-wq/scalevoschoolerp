@@ -35,7 +35,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST — create a new standalone exam timetable (also creates/updates AdmitCardEvent's timeTable)
+// POST — create a new exam timetable + auto-create admit cards for eligible students
+// Eligible = ACTIVE, NOT tcGenerated
 // Body: { examName, courseId, batchId, startDate, endDate, timeTable: [{date, subject, startTime, endTime, duration?}] }
 export async function POST(req: NextRequest) {
   const { error, user } = requireAuth(req)
@@ -46,10 +47,12 @@ export async function POST(req: NextRequest) {
     const { examName, courseId, batchId, startDate, endDate, timeTable } = body
 
     if (!examName || !courseId || !startDate || !endDate || !Array.isArray(timeTable) || timeTable.length === 0) {
-      return NextResponse.json({ error: 'Required fields missing: Exam Name, Class, Start Date, End Date, and Subjects are required' }, { status: 400 })
+      return NextResponse.json({
+        error: 'Required fields missing: Exam Name, Class, Start Date, End Date, and at least one Subject row are required'
+      }, { status: 400 })
     }
 
-    // Ensure a valid batchId exists for AdmitCardEvent relation
+    // Ensure a valid batchId for FK constraint on AdmitCardEvent
     let resolvedBatchId = batchId && batchId !== 'all' ? batchId : null
     if (!resolvedBatchId) {
       let existingBatch = await prisma.batch.findFirst({
@@ -57,19 +60,21 @@ export async function POST(req: NextRequest) {
       })
       if (!existingBatch) {
         existingBatch = await prisma.batch.create({
-          data: {
-            tenantId: user!.tenantId,
-            courseId,
-            name: 'Section A',
-            isActive: true
-          }
+          data: { tenantId: user!.tenantId, courseId, name: 'Section A', isActive: true }
         })
       }
       resolvedBatchId = existingBatch.id
     }
 
-    // Get all active students in this class
-    const studentWhere: any = { tenantId: user!.tenantId, courseId, status: 'ACTIVE' }
+    // Get all ELIGIBLE students in this class:
+    // - status = ACTIVE
+    // - tcGenerated = false (TC-issued students cannot receive admit cards)
+    const studentWhere: any = {
+      tenantId: user!.tenantId,
+      courseId,
+      status: 'ACTIVE',
+      tcGenerated: false,
+    }
     if (batchId && batchId !== 'all') {
       const hasBatchStudents = await prisma.student.count({
         where: { tenantId: user!.tenantId, courseId, batchId, status: 'ACTIVE' }
@@ -83,7 +88,9 @@ export async function POST(req: NextRequest) {
     })
 
     if (students.length === 0) {
-      return NextResponse.json({ error: 'No active students found in this class. Please ensure students are admitted to this class.' }, { status: 400 })
+      return NextResponse.json({
+        error: 'No eligible active students found (TC-generated and blocked students are excluded automatically).'
+      }, { status: 400 })
     }
 
     const event = await prisma.admitCardEvent.create({
